@@ -34,16 +34,20 @@ mmlu_an = json.loads((ROOT / "results/v2_mmlu_32679038/analysis.json").read_text
 def bars(ax, labels, values, colors, fmt, ylim=None, ci=None):
     x = range(len(labels))
     b = ax.bar(x, values, color=colors, width=0.62)
+    tops = list(values)
     if ci is not None:
         for i, (lo, hi) in enumerate(ci):
             if lo is not None:
-                ax.plot([i, i], [lo, hi], color=INK2, linewidth=1.2)
-    for rect, v in zip(b, values):
-        ax.text(rect.get_x() + rect.get_width() / 2, rect.get_height(), fmt(v), ha="center", va="bottom",
+                ax.plot([i, i], [lo, hi], color=INK2, linewidth=1.2, solid_capstyle="butt")
+                ax.plot([i - 0.08, i + 0.08], [hi, hi], color=INK2, linewidth=1.2)
+                ax.plot([i - 0.08, i + 0.08], [lo, lo], color=INK2, linewidth=1.2)
+                tops[i] = max(tops[i], hi)
+    span = (ylim[1] - ylim[0]) if ylim else max(values)
+    for rect, v, top in zip(b, values, tops):
+        ax.text(rect.get_x() + rect.get_width() / 2, top + 0.015 * span, fmt(v), ha="center", va="bottom",
                 fontsize=9, color=INK)
     ax.set_xticks(list(x), labels, fontsize=8.5)
-    if ylim:
-        ax.set_ylim(*ylim)
+    ax.set_ylim(*ylim) if ylim else ax.set_ylim(0, max(tops) * 1.15)
     ax.tick_params(axis="x", length=0)
 
 
