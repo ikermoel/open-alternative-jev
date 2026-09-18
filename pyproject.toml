@@ -3,13 +3,13 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "open-system-one"
+name = "open-alternative-jev"
 version = "0.1.0"
-description = "Open-source System One models: typed, calibrated decisions from any open-weights LLM in one forward pass."
+description = "Open alternative to Jev. Open-source System One models: typed, calibrated decisions from any open-weights LLM in one forward pass."
 readme = "README.md"
 license = { text = "Apache-2.0" }
 requires-python = ">=3.10"
-authors = [{ name = "Open System One contributors" }]
+authors = [{ name = "Open Alternative Jev contributors" }]
 keywords = ["llm", "classification", "decisions", "logits", "calibration", "vllm", "transformers"]
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -26,7 +26,7 @@ quant = ["bitsandbytes>=0.43", "accelerate"]
 dev = ["pytest>=7"]
 
 [project.urls]
-Repository = "https://github.com/ikermoel/open-system-one"
+Repository = "https://github.com/ikermoel/open-alternative-jev"
 
 [tool.setuptools.packages.find]
 include = ["so1*"]

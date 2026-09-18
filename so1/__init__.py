@@ -1,4 +1,4 @@
-"""Open System One: typed, calibrated decisions from any open-weights LLM in a single forward pass.
+"""Open Alternative to Jev (import name so1, "System One"): typed, calibrated decisions from any open-weights LLM in a single forward pass.
 
     from so1 import Decider, Choice
     decider = Decider.from_pretrained("Qwen/Qwen3.6-27B", backend="hf", load_in_8bit=True)

@@ -1,7 +1,8 @@
-# Open System One
+# Open Alternative to Jev
 
 **Open-source System One models: typed, calibrated decisions from any open-weights LLM, in one forward pass.**
 An open alternative to the idea behind TypeSafe's Jev, running on your own GPU with models you already have.
+Python package `open-alternative-jev`, import name `so1` ("System One").
 
 ```python
 from so1 import Decider, Choice, yes_no
@@ -96,9 +97,9 @@ calibrated = [scaler.apply(d) for d in decisions]
 ## Install
 
 ```bash
-pip install open-system-one            # Hugging Face backend
-pip install "open-system-one[vllm]"    # + vLLM backend
-pip install "open-system-one[quant]"   # + bitsandbytes 8-bit / 4-bit loading
+pip install open-alternative-jev            # Hugging Face backend
+pip install "open-alternative-jev[vllm]"    # + vLLM backend
+pip install "open-alternative-jev[quant]"   # + bitsandbytes 8-bit / 4-bit loading
 ```
 
 Python 3.10+. Works on CPU for small models (the test suite runs on Qwen2.5-0.5B on a laptop).
