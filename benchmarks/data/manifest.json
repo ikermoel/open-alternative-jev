@@ -1,0 +1,10 @@
+{
+  "model": "Qwen/Qwen3.6-27B",
+  "revision": "6a9e13bd6fc8f0983b9b99948120bc37f49c13e9",
+  "dataset": "cais/mmlu",
+  "dataset_revision": "c30699e8356da336a370243923dbaf21066bb9fe",
+  "split": "test",
+  "seed": 20260917,
+  "count": 300,
+  "source_count": 14042
+}

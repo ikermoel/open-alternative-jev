@@ -1,0 +1,92 @@
+{
+  "A": {
+    "n": 300,
+    "accuracy": 0.8433333333333334,
+    "ece_10_bins": 0.06447740852832796,
+    "nll": 0.4835815859206721,
+    "brier": 0.2274290710616433,
+    "accuracy_by_position": {
+      "0": 0.8433333333333334
+    },
+    "forward_seconds": 95.586029633414,
+    "questions_per_second": 3.138533958890673,
+    "peak_allocated_gib": 28.167747974395752,
+    "peak_reserved_gib": 29.197265625
+  },
+  "B": {
+    "n": 300,
+    "accuracy": 0.84,
+    "ece_10_bins": 0.06972435216108955,
+    "nll": 0.4953005833748303,
+    "brier": 0.22842413224337277,
+    "accuracy_by_position": {
+      "0": 0.81,
+      "1": 0.82,
+      "2": 0.89
+    },
+    "forward_seconds": 74.83549786836375,
+    "questions_per_second": 4.0087927326641495,
+    "peak_allocated_gib": 28.558400630950928,
+    "peak_reserved_gib": 29.197265625,
+    "vs_A": {
+      "accuracy_delta": -0.0033333333333333335,
+      "cluster_bootstrap_95_ci": [
+        -0.02,
+        0.01
+      ],
+      "answer_disagreement": 0.02,
+      "max_probability_difference": 0.29038751125335693
+    }
+  },
+  "C": {
+    "n": 300,
+    "accuracy": 0.84,
+    "ece_10_bins": 0.05858163485924402,
+    "nll": 0.5064216930665139,
+    "brier": 0.23255638934841763,
+    "accuracy_by_position": {
+      "0": 0.81,
+      "1": 0.85,
+      "2": 0.86
+    },
+    "forward_seconds": 53.83455068327021,
+    "questions_per_second": 5.57262940235199,
+    "peak_allocated_gib": 28.223851680755615,
+    "peak_reserved_gib": 29.197265625,
+    "vs_A": {
+      "accuracy_delta": -0.0033333333333333335,
+      "cluster_bootstrap_95_ci": [
+        -0.02666666666666667,
+        0.02
+      ],
+      "answer_disagreement": 0.06333333333333334,
+      "max_probability_difference": 0.7645127773284912
+    }
+  },
+  "C_rotated": {
+    "n": 300,
+    "accuracy": 0.8433333333333334,
+    "ece_10_bins": 0.06379538357257841,
+    "nll": 0.501212542778092,
+    "brier": 0.2342191581230571,
+    "accuracy_by_position": {
+      "0": 0.82,
+      "1": 0.85,
+      "2": 0.86
+    },
+    "forward_seconds": 53.843425990780815,
+    "questions_per_second": 5.5717108352534375,
+    "peak_allocated_gib": 28.22945737838745,
+    "peak_reserved_gib": 29.197265625,
+    "vs_A": {
+      "accuracy_delta": 0,
+      "cluster_bootstrap_95_ci": [
+        -0.02666666666666667,
+        0.03
+      ],
+      "answer_disagreement": 0.06333333333333334,
+      "max_probability_difference": 0.9554053447209299
+    }
+  },
+  "order_disagreement": 0.09333333333333334
+}

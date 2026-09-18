@@ -1,0 +1,12 @@
+{
+  "records": 1200,
+  "unique_questions": 300,
+  "probability_checks": "passed",
+  "first_C_vs_A_answer_flips": 3,
+  "first_C_count": 100,
+  "C_vs_B_accuracy_delta_ci95": [
+    -0.023333333333333334,
+    0.02666666666666667
+  ],
+  "C_vs_B_throughput_ratio": 1.3901016525363115
+}

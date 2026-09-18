@@ -1,0 +1,173 @@
+{
+  "time_vs_tokens": {
+    "A": {
+      "calls": 300,
+      "fixed_seconds_per_call": 0.2167482614739487,
+      "ms_per_padded_token": 0.7722243579752723,
+      "pearson_r": 0.9855952883982814,
+      "padding_waste": 0.0,
+      "seconds": 95.586029633414,
+      "real_tokens": 39576,
+      "padded_tokens": 39576
+    },
+    "B": {
+      "calls": 100,
+      "fixed_seconds_per_call": 0.16297176431514449,
+      "ms_per_padded_token": 0.9598963898210889,
+      "pearson_r": 0.9982437338724928,
+      "padding_waste": 0.3510428964974419,
+      "seconds": 74.83549786836375,
+      "real_tokens": 39576,
+      "padded_tokens": 60984
+    },
+    "C": {
+      "calls": 100,
+      "fixed_seconds_per_call": 0.147581722683837,
+      "ms_per_padded_token": 0.9726298888611736,
+      "pearson_r": 0.9968592807507815,
+      "padding_waste": 0.0,
+      "seconds": 53.83455068327021,
+      "real_tokens": 40176,
+      "padded_tokens": 40176
+    },
+    "C_rotated": {
+      "calls": 100,
+      "fixed_seconds_per_call": 0.14769311664501567,
+      "ms_per_padded_token": 0.9725735346047204,
+      "pearson_r": 0.9967782542351689,
+      "padding_waste": 0.0,
+      "seconds": 53.843425990780815,
+      "real_tokens": 40176,
+      "padded_tokens": 40176
+    }
+  },
+  "flips_by_position": {
+    "B": {
+      "0": {
+        "n": 100,
+        "accuracy": 0.81,
+        "flips_vs_A": 2,
+        "mean_abs_prob_diff": 0.013675305728920648,
+        "max_abs_prob_diff": 0.2711678594350815
+      },
+      "1": {
+        "n": 100,
+        "accuracy": 0.82,
+        "flips_vs_A": 2,
+        "mean_abs_prob_diff": 0.014026450556814325,
+        "max_abs_prob_diff": 0.29038751125335693
+      },
+      "2": {
+        "n": 100,
+        "accuracy": 0.89,
+        "flips_vs_A": 2,
+        "mean_abs_prob_diff": 0.009904416407553072,
+        "max_abs_prob_diff": 0.18542605638504028
+      }
+    },
+    "C": {
+      "0": {
+        "n": 100,
+        "accuracy": 0.81,
+        "flips_vs_A": 3,
+        "mean_abs_prob_diff": 0.01284356083809314,
+        "max_abs_prob_diff": 0.15444305539131165
+      },
+      "1": {
+        "n": 100,
+        "accuracy": 0.85,
+        "flips_vs_A": 11,
+        "mean_abs_prob_diff": 0.04699928962842705,
+        "max_abs_prob_diff": 0.7645127773284912
+      },
+      "2": {
+        "n": 100,
+        "accuracy": 0.86,
+        "flips_vs_A": 5,
+        "mean_abs_prob_diff": 0.05297400089724192,
+        "max_abs_prob_diff": 0.6025458872318268
+      }
+    },
+    "C_rotated": {
+      "0": {
+        "n": 100,
+        "accuracy": 0.82,
+        "flips_vs_A": 2,
+        "mean_abs_prob_diff": 0.014145440979627324,
+        "max_abs_prob_diff": 0.3173339366912842
+      },
+      "1": {
+        "n": 100,
+        "accuracy": 0.85,
+        "flips_vs_A": 8,
+        "mean_abs_prob_diff": 0.03984960523056884,
+        "max_abs_prob_diff": 0.6560032367706299
+      },
+      "2": {
+        "n": 100,
+        "accuracy": 0.86,
+        "flips_vs_A": 9,
+        "mean_abs_prob_diff": 0.06028736266279793,
+        "max_abs_prob_diff": 0.9554053447209299
+      }
+    }
+  },
+  "temperature_scaling_2fold": {
+    "A": {
+      "n": 300,
+      "temperatures": [
+        1.5,
+        1.45
+      ],
+      "ece_raw": 0.06447740852832796,
+      "ece_scaled": 0.031760805692394985,
+      "nll_raw": 0.4835815859206721,
+      "nll_scaled": 0.4421932792918712,
+      "mean_confidence_raw": 0.9013074102004369,
+      "mean_confidence_scaled": 0.8456503787995759,
+      "accuracy": 0.8433333333333334
+    },
+    "B": {
+      "n": 300,
+      "temperatures": [
+        1.55,
+        1.45
+      ],
+      "ece_raw": 0.06972435216108955,
+      "ece_scaled": 0.0355454788132932,
+      "nll_raw": 0.4953005833748303,
+      "nll_scaled": 0.45012257651881876,
+      "mean_confidence_raw": 0.9006211791435877,
+      "mean_confidence_scaled": 0.8429496540210748,
+      "accuracy": 0.84
+    },
+    "C": {
+      "n": 300,
+      "temperatures": [
+        1.45,
+        1.45
+      ],
+      "ece_raw": 0.05858163485924402,
+      "ece_scaled": 0.028204435865019632,
+      "nll_raw": 0.5064216930665139,
+      "nll_scaled": 0.46797424636841,
+      "mean_confidence_raw": 0.8966800563534101,
+      "mean_confidence_scaled": 0.8363673539326916,
+      "accuracy": 0.84
+    },
+    "C_rotated": {
+      "n": 300,
+      "temperatures": [
+        1.45,
+        1.4
+      ],
+      "ece_raw": 0.06379538357257841,
+      "ece_scaled": 0.02425793612225003,
+      "nll_raw": 0.501212542778092,
+      "nll_scaled": 0.4664640980546997,
+      "mean_confidence_raw": 0.8954973020156225,
+      "mean_confidence_scaled": 0.837240860868607,
+      "accuracy": 0.8433333333333334
+    }
+  }
+}

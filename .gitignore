@@ -1,0 +1,17 @@
+__pycache__/
+*.pyc
+*.egg-info/
+build/
+dist/
+venv/
+.venv/
+.env
+.pytest_cache/
+# large or non-redistributable benchmark artifacts
+benchmarks/logs/
+benchmarks/data/race1000.jsonl
+benchmarks/data/model_path.txt
+# cluster-specific working notes
+benchmarks/docs/CLUSTER_HANDOFF.txt
+benchmarks/docs/STATUS.md
+benchmarks/docs/WORKLOG.md

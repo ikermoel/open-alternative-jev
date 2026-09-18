@@ -1,0 +1,281 @@
+{
+  "A": {
+    "n": 1200,
+    "accuracy": 0.8416666666666667,
+    "ece_10_bins": 0.054396267731984416,
+    "nll": 0.49225251997232744,
+    "brier": 0.2292549651785618,
+    "accuracy_by_position": {
+      "0": 0.8416666666666667
+    },
+    "calls": 1200,
+    "forward_seconds": 386.89147972746287,
+    "questions_per_second": 3.101644938899439,
+    "real_tokens": 163032,
+    "padded_tokens": 163032,
+    "peak_allocated_gib": 28.209177494049072,
+    "peak_reserved_gib": 29.724609375
+  },
+  "A_pad": {
+    "n": 1200,
+    "accuracy": 0.8391666666666666,
+    "ece_10_bins": 0.05677303875486054,
+    "nll": 0.4888864535517276,
+    "brier": 0.22756096497142364,
+    "accuracy_by_position": {
+      "0": 0.8391666666666666
+    },
+    "calls": 1200,
+    "forward_seconds": 1324.6213783732383,
+    "questions_per_second": 0.905919245749842,
+    "real_tokens": 163032,
+    "padded_tokens": 1228800,
+    "peak_allocated_gib": 28.224311351776123,
+    "peak_reserved_gib": 29.724609375,
+    "vs_A": {
+      "n": 1200,
+      "accuracy_delta": -0.0025,
+      "cluster_bootstrap_95_ci": [
+        -0.010833333333333334,
+        0.006666666666666667
+      ],
+      "answer_disagreement": 0.02666666666666667,
+      "flips_by_position": {
+        "0": "32/1200"
+      },
+      "mean_abs_probability_difference": 0.012485613908398226,
+      "max_probability_difference": 0.52696393430233
+    }
+  },
+  "B3": {
+    "n": 1200,
+    "accuracy": 0.8375,
+    "ece_10_bins": 0.05838189437985417,
+    "nll": 0.4929749373034614,
+    "brier": 0.22941276649007655,
+    "accuracy_by_position": {
+      "0": 0.835,
+      "1": 0.8325,
+      "2": 0.845
+    },
+    "calls": 400,
+    "forward_seconds": 309.22173482133076,
+    "questions_per_second": 3.880710392797465,
+    "real_tokens": 163032,
+    "padded_tokens": 253638,
+    "peak_allocated_gib": 28.855453968048096,
+    "peak_reserved_gib": 29.724609375,
+    "vs_A": {
+      "n": 1200,
+      "accuracy_delta": -0.004166666666666667,
+      "cluster_bootstrap_95_ci": [
+        -0.011666666666666667,
+        0.0033333333333333335
+      ],
+      "answer_disagreement": 0.023333333333333334,
+      "flips_by_position": {
+        "0": "10/400",
+        "1": "11/400",
+        "2": "7/400"
+      },
+      "mean_abs_probability_difference": 0.01263945413542416,
+      "max_probability_difference": 0.37435685098171234
+    }
+  },
+  "C3": {
+    "n": 1200,
+    "accuracy": 0.84,
+    "ece_10_bins": 0.05161870119472339,
+    "nll": 0.5099561726996176,
+    "brier": 0.23886881387687253,
+    "accuracy_by_position": {
+      "0": 0.84,
+      "1": 0.835,
+      "2": 0.845
+    },
+    "calls": 400,
+    "forward_seconds": 220.6302875339752,
+    "questions_per_second": 5.438963133360419,
+    "real_tokens": 165432,
+    "padded_tokens": 165432,
+    "peak_allocated_gib": 28.286663055419922,
+    "peak_reserved_gib": 29.724609375,
+    "vs_A": {
+      "n": 1200,
+      "accuracy_delta": -0.0016666666666666668,
+      "cluster_bootstrap_95_ci": [
+        -0.013333333333333334,
+        0.01
+      ],
+      "answer_disagreement": 0.06166666666666667,
+      "flips_by_position": {
+        "0": "10/400",
+        "1": "32/400",
+        "2": "32/400"
+      },
+      "mean_abs_probability_difference": 0.0363546987383315,
+      "max_probability_difference": 0.8055595830082893
+    },
+    "vs_B3": {
+      "n": 1200,
+      "accuracy_delta": 0.0025,
+      "cluster_bootstrap_95_ci": [
+        -0.009166666666666667,
+        0.013333333333333334
+      ],
+      "answer_disagreement": 0.06416666666666666,
+      "flips_by_position": {
+        "0": "8/400",
+        "1": "35/400",
+        "2": "34/400"
+      },
+      "mean_abs_probability_difference": 0.036308234262456975,
+      "max_probability_difference": 0.820928730070591
+    }
+  },
+  "C3_rot": {
+    "n": 1200,
+    "accuracy": 0.8325,
+    "ece_10_bins": 0.05473913284639517,
+    "nll": 0.5140970209288588,
+    "brier": 0.2420719389458943,
+    "accuracy_by_position": {
+      "0": 0.835,
+      "1": 0.8375,
+      "2": 0.825
+    },
+    "calls": 400,
+    "forward_seconds": 219.9072053261334,
+    "questions_per_second": 5.456847119767358,
+    "real_tokens": 165432,
+    "padded_tokens": 165432,
+    "peak_allocated_gib": 28.280463695526123,
+    "peak_reserved_gib": 29.724609375,
+    "vs_A": {
+      "n": 1200,
+      "accuracy_delta": -0.009166666666666667,
+      "cluster_bootstrap_95_ci": [
+        -0.020833333333333332,
+        0.0033333333333333335
+      ],
+      "answer_disagreement": 0.06666666666666667,
+      "flips_by_position": {
+        "0": "6/400",
+        "1": "33/400",
+        "2": "41/400"
+      },
+      "mean_abs_probability_difference": 0.037937997199015944,
+      "max_probability_difference": 0.9911524057388306
+    },
+    "vs_C3": {
+      "n": 1200,
+      "accuracy_delta": -0.0075,
+      "cluster_bootstrap_95_ci": [
+        -0.0225,
+        0.006666666666666667
+      ],
+      "answer_disagreement": 0.08166666666666667,
+      "flips_by_position": {
+        "0": "33/400",
+        "1": "24/400",
+        "2": "41/400"
+      },
+      "mean_abs_probability_difference": 0.05005703307255075,
+      "max_probability_difference": 0.9839422106742859
+    }
+  },
+  "C6": {
+    "n": 1200,
+    "accuracy": 0.8491666666666666,
+    "ece_10_bins": 0.046886120935281106,
+    "nll": 0.4834525474053816,
+    "brier": 0.23072634949505433,
+    "accuracy_by_position": {
+      "0": 0.85,
+      "1": 0.85,
+      "2": 0.865,
+      "3": 0.845,
+      "4": 0.855,
+      "5": 0.83
+    },
+    "calls": 200,
+    "forward_seconds": 193.14413572102785,
+    "questions_per_second": 6.212976622460065,
+    "real_tokens": 166032,
+    "padded_tokens": 166032,
+    "peak_allocated_gib": 28.39951992034912,
+    "peak_reserved_gib": 29.724609375,
+    "vs_A": {
+      "n": 1200,
+      "accuracy_delta": 0.0075,
+      "cluster_bootstrap_95_ci": [
+        -0.005833333333333334,
+        0.021666666666666667
+      ],
+      "answer_disagreement": 0.07416666666666667,
+      "flips_by_position": {
+        "0": "3/200",
+        "1": "18/200",
+        "2": "13/200",
+        "3": "18/200",
+        "4": "17/200",
+        "5": "20/200"
+      },
+      "mean_abs_probability_difference": 0.04277059789526424,
+      "max_probability_difference": 0.9615279212594032
+    }
+  },
+  "C12": {
+    "n": 1200,
+    "accuracy": 0.8416666666666667,
+    "ece_10_bins": 0.038399435952305744,
+    "nll": 0.5010589047468517,
+    "brier": 0.23621724975495864,
+    "accuracy_by_position": {
+      "0": 0.8,
+      "1": 0.87,
+      "2": 0.81,
+      "3": 0.85,
+      "4": 0.88,
+      "5": 0.77,
+      "6": 0.87,
+      "7": 0.83,
+      "8": 0.86,
+      "9": 0.83,
+      "10": 0.85,
+      "11": 0.88
+    },
+    "calls": 100,
+    "forward_seconds": 178.71818505448755,
+    "questions_per_second": 6.714481795090658,
+    "real_tokens": 166332,
+    "padded_tokens": 166332,
+    "peak_allocated_gib": 28.783761501312256,
+    "peak_reserved_gib": 29.724609375,
+    "vs_A": {
+      "n": 1200,
+      "accuracy_delta": 0,
+      "cluster_bootstrap_95_ci": [
+        -0.0175,
+        0.016666666666666666
+      ],
+      "answer_disagreement": 0.08666666666666667,
+      "flips_by_position": {
+        "0": "4/100",
+        "1": "9/100",
+        "10": "11/100",
+        "11": "8/100",
+        "2": "9/100",
+        "3": "9/100",
+        "4": "9/100",
+        "5": "13/100",
+        "6": "7/100",
+        "7": "8/100",
+        "8": "9/100",
+        "9": "8/100"
+      },
+      "mean_abs_probability_difference": 0.05016827367119087,
+      "max_probability_difference": 0.9519762042909861
+    }
+  }
+}

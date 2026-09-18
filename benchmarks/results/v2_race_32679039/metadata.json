@@ -1,0 +1,50 @@
+{
+  "data": "race1000.jsonl",
+  "manifest_v2": {
+    "seed": 20260918,
+    "mmlu": {
+      "dataset": "cais/mmlu",
+      "revision": "c30699e8356da336a370243923dbaf21066bb9fe",
+      "split": "test",
+      "count": 1200,
+      "pilot_prefix": 300,
+      "source_count": 14042
+    },
+    "race": {
+      "dataset": "ehovy/race",
+      "config": "high",
+      "revision": "2fec9fd81f1dc971569a9b729c43f2f0e6436637",
+      "split": "test",
+      "passages": 250,
+      "questions": 1000,
+      "eligible_passages": 363,
+      "source_questions": 3498
+    }
+  },
+  "model_path": "/projects/ikmo5391/hf/hub/models--Qwen--Qwen3.6-27B/snapshots/6a9e13bd6fc8f0983b9b99948120bc37f49c13e9",
+  "torch": "2.6.0+cu124",
+  "transformers": "5.16.1",
+  "gpu": "NVIDIA H200 NVL MIG 2g.35gb",
+  "gpu_bytes": 34896609280,
+  "quantization": "bitsandbytes LLM.int8; BF16 nonquantized modules",
+  "labels": [
+    32,
+    33,
+    34,
+    35
+  ],
+  "separator_ids": [
+    62,
+    248046,
+    198
+  ],
+  "pad_len": 1152,
+  "group_size": 4,
+  "modes": "A,B4,C4,C4_rot",
+  "count": 1000,
+  "system_block_stripped_in_follow_up_turns": false,
+  "sample_full_prompt": "<|im_start|>user\nRead the passage and answer the question. Reply with only A, B, C, or D.\n\nPassage:\nOn a hot summer day, a soft drink can really take away your thirst. At home, at school, in the park or at the movies---you can find one almost anywhere.\nCarbonated\nYou can see bubbles  in these! Of all soft drinks sold, about 75 percent are carbonated . But be careful, carbonated soft drinks have lots of sugar and caffeine . Caffeine is not very good for you in the summer because it takes water out of your body. And the sugar can make you overweight if you drink too much.\nFruit juice\nThere are different kinds of juice. One kind is made only from fresh fruit. This kind of fruit juice may not taste sweet enough for some people, but it is nutritious . Another kind of fruit juice tastes good but has lots of sugar in it. Many young people buy this kind because the advertisements are good. It is bad for your teeth and bones to drink lots of this.\nEnergy drinks\nThese kinds of drinks have caffeine and things that make people get excited in them. They are sometimes called \"party drinks\". Doctors say that if you drink too much of this kind, you may have a heart attack.\nBottled water\nWe have lots of different kinds of bottled water, such as mineral water, purified water and distilled water . They are clean and easy to drink. But it is best not to drink very cold water. It may make your stomach feel bad.\nSports drinks\nMost of these have funny names like \"Scream \" and \"G-Vital \". They have lots of vitamins and minerals in them. After you play sports, you may want to drink one of these.\nBut if you just spend your summer holiday sitting around watching TV, you won't need them at all!\n\nQuestion: Which two types of drinks may make you overweight?\nA. Carbonated and fruit juice.\nB. Energy drinks and sports drinks.\nC. Carbonated and energy drinks.\nD. Fruit juice and bottled water.<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n",
+  "sample_follow_prompt": "<|im_start|>user\nAnswer the following question about the same passage. Reply with only A, B, C, or D.\n\nQuestion: Which two types of drinks may make you overweight?\nA. Carbonated and fruit juice.\nB. Energy drinks and sports drinks.\nC. Carbonated and energy drinks.\nD. Fruit juice and bottled water.<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n",
+  "protocol": "zero-shot forced label scoring, thinking disabled; C concatenates chat turns with fixed underscore assistant placeholders; shared context only in the first C turn; no generated answers reused",
+  "script_sha256": "154973e1ab9a834f6b333b764525935a30fb81515e98d394b2fcde8bfbcc91e1"
+}

@@ -1,0 +1,32 @@
+{
+  "manifest": {
+    "model": "Qwen/Qwen3.6-27B",
+    "revision": "6a9e13bd6fc8f0983b9b99948120bc37f49c13e9",
+    "dataset": "cais/mmlu",
+    "dataset_revision": "c30699e8356da336a370243923dbaf21066bb9fe",
+    "split": "test",
+    "seed": 20260917,
+    "count": 300,
+    "source_count": 14042
+  },
+  "torch": "2.6.0+cu124",
+  "transformers": "5.16.1",
+  "gpu": "NVIDIA H200 NVL MIG 2g.35gb",
+  "gpu_bytes": 34896609280,
+  "quantization": "bitsandbytes LLM.int8; BF16 nonquantized modules",
+  "labels": [
+    32,
+    33,
+    34,
+    35
+  ],
+  "separator_ids": [
+    62,
+    248046,
+    198
+  ],
+  "sample_prompt": "<|im_start|>user\nChoose the correct answer. Reply with only A, B, C, or D.\n\nWhich of the following is not a hypothesis for why hominids walked on two legs?\nA. it freed the hands to carry things\nB. it allowed for braincase expansion\nC. it expended less energy than quadrupedalism for going long distances\nD. it allowed hominids to see greater distances<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n",
+  "count": 300,
+  "protocol": "zero-shot forced label scoring, thinking disabled; C concatenates complete chat prompts with fixed underscore assistant placeholders; no generated answers reused",
+  "script_sha256": "3f7d3053d879d561150825abc6440d7b56dd79114c67a2d9221673821d47fdf7"
+}

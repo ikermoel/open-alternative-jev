@@ -1,0 +1,21 @@
+{
+  "seed": 20260918,
+  "mmlu": {
+    "dataset": "cais/mmlu",
+    "revision": "c30699e8356da336a370243923dbaf21066bb9fe",
+    "split": "test",
+    "count": 1200,
+    "pilot_prefix": 300,
+    "source_count": 14042
+  },
+  "race": {
+    "dataset": "ehovy/race",
+    "config": "high",
+    "revision": "2fec9fd81f1dc971569a9b729c43f2f0e6436637",
+    "split": "test",
+    "passages": 250,
+    "questions": 1000,
+    "eligible_passages": 363,
+    "source_questions": 3498
+  }
+}
