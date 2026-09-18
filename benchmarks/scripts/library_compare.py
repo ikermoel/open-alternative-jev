@@ -44,8 +44,10 @@ def main():
     ap.add_argument("--chunk", type=int, default=8, help="items per decide_many call")
     ap.add_argument("--hf-8bit", action="store_true")
     ap.add_argument("--gpu-util", type=float, default=0.85)
+    ap.add_argument("--vllm-kwargs", default="{}", help='JSON of extra vllm.LLM kwargs, e.g. {"gdn_prefill_backend": "triton"}')
     ap.add_argument("--out", required=True)
     args = ap.parse_args()
+    vllm_kwargs = json.loads(args.vllm_kwargs)
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
     items = load_items(args.data, args.passages)
@@ -61,7 +63,7 @@ def main():
                                               device_map={"": 0}, batch_size=8)
         else:
             decider = Decider.from_pretrained(args.model, backend="vllm", gpu_memory_utilization=args.gpu_util,
-                                              max_model_len=8192, enable_prefix_caching=True)
+                                              max_model_len=8192, enable_prefix_caching=True, **vllm_kwargs)
         pb = PromptBuilder(decider.backend.tokenizer)
         tokens = {"packed": sum(len(pb.packed(s, qs)) for s, qs, _ in items),
                   "separate": sum(len(p) for s, qs, _ in items for p in pb.separate(s, qs))}

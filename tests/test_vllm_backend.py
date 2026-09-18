@@ -21,9 +21,11 @@ QUESTIONS = [
 
 @pytest.fixture(scope="module")
 def vllm_backend():
+    import json
     from so1.backends.vllm import VLLMBackend
+    extra = json.loads(os.environ.get("SO1_VLLM_KWARGS", "{}"))  # e.g. {"gdn_prefill_backend": "triton"}
     return VLLMBackend.from_pretrained(MODEL, gpu_memory_utilization=float(os.environ.get("SO1_GPU_UTIL", "0.5")),
-                                       max_model_len=4096, enforce_eager=True)
+                                       max_model_len=4096, enforce_eager=True, **extra)
 
 
 def test_packed_positions_and_shapes(vllm_backend):
