@@ -1,0 +1,5 @@
+git+https://github.com/ikermoel/open-alternative-jev
+torch
+transformers>=5.16
+accelerate
+spaces
