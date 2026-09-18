@@ -2,29 +2,9 @@
 
 **Open-source System One models: typed, calibrated decisions from any open-weights LLM, in one forward pass.**
 An open alternative to the idea behind TypeSafe's Jev, running on your own GPU with models you already have.
-Python package `open-alternative-jev`, import name `so1` ("System One").
+Python package `open-alternative-jev`, import name `so1` ("System One"). No text is generated: the model reads the state once and every question is answered from the next-token distribution at its own position, restricted to the options you give.
 
-```python
-from so1 import Decider, Choice, yes_no
-
-decider = Decider.from_pretrained("Qwen/Qwen3.6-27B", backend="hf", load_in_8bit=True)
-decisions = decider.decide(
-    state="Ticket #8813: 'Since yesterday's release the export button does nothing. Board meeting Monday.'",
-    questions=[
-        Choice("Ticket category", ["bug", "feature request", "billing", "question"]),
-        Choice("Urgency", ["low", "medium", "high"]),
-        yes_no("Escalate to an engineer?"),
-    ],
-)
-for d in decisions:
-    print(d.choice, round(d.confidence, 2))   # bug 0.83 / high 0.71 / yes 0.77
-```
-
-No text is generated. The model reads the state once, and every question is answered from the next-token
-distribution at its own position in a single forward pass, restricted to the options you gave. The answer
-is always one of your options, and it comes with a probability.
-
-## Measured, not promised
+## Results
 
 Qwen3.6-27B (bitsandbytes 8-bit), one H200 MIG slice with 35 GB, Hugging Face Transformers. Every number
 below comes from `benchmarks/results/`, produced by the scripts in `benchmarks/scripts/`.
@@ -93,6 +73,26 @@ from so1 import TemperatureScaler
 scaler = TemperatureScaler().fit(probabilities, correct_indices)   # a few hundred labelled decisions
 calibrated = [scaler.apply(d) for d in decisions]
 ```
+
+## Quickstart
+
+```python
+from so1 import Decider, Choice, yes_no
+
+decider = Decider.from_pretrained("Qwen/Qwen3.6-27B", backend="hf", load_in_8bit=True)
+decisions = decider.decide(
+    state="Ticket #8813: 'Since yesterday's release the export button does nothing. Board meeting Monday.'",
+    questions=[
+        Choice("Ticket category", ["bug", "feature request", "billing", "question"]),
+        Choice("Urgency", ["low", "medium", "high"]),
+        yes_no("Escalate to an engineer?"),
+    ],
+)
+for d in decisions:
+    print(d.choice, round(d.confidence, 2))   # bug 0.83 / high 0.71 / yes 0.77
+```
+
+The answer is always one of your options, and it comes with a probability.
 
 ## Install
 
