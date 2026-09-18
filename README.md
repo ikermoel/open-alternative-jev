@@ -74,6 +74,33 @@ scaler = TemperatureScaler().fit(probabilities, correct_indices)   # a few hundr
 calibrated = [scaler.apply(d) for d in decisions]
 ```
 
+### The library itself, on both backends
+
+Same code path users get, on a smaller model: Qwen3.5-4B (BF16), RACE-H, 100 passages x 4 questions, one
+H200 MIG slice. Wall-clock time per question including tokenization, from `benchmarks/scripts/library_compare.py`.
+
+| Backend / mode | Accuracy | Questions / s | Tokens sent | Agreement with HF separate |
+|---|---:|---:|---:|---:|
+| Transformers, `separate` | 87.3 % | 11.2 | 179,807 | |
+| Transformers, `packed` | 84.5 % | 27.0 | 71,216 | 93.8 % |
+| vLLM, `separate` (prefix cache + `allowed_token_ids`) | 87.0 % | 39.8 | 179,807 | 99.8 % |
+| vLLM, `packed` (`prompt_logprobs`) | 84.3 % | 32.4 | 71,216 | 93.8 % |
+
+Three things this table says that the 27B tables do not:
+
+- **Small models pay for packing.** On the 4B model, packing costs 2.8 points (11 of 400 answers), where the
+  27B lost nothing. Interference grows as the model shrinks. With small models and accuracy at stake, use
+  `mode="separate"`.
+- **On vLLM, `separate` is the fastest mode.** Prefix caching already computes the shared passage once, and
+  constrained one-token generation is cheaper than extracting top-k `prompt_logprobs` at every position.
+  Packing's throughput advantage is a property of engines without a prefix cache, such as plain Transformers.
+- **The two backends agree.** In `separate` mode, vLLM and Transformers pick the same answer 99.8 % of the
+  time, with a mean absolute probability difference of 0.003.
+
+So the recommendation is simple: on Transformers, pack when questions share a state; on vLLM, keep
+`separate` and let the prefix cache do the work. Either way you get typed answers with probabilities, no
+generated text, and the same calibration tools.
+
 ## Quickstart
 
 ```python
@@ -147,7 +174,7 @@ Two modes:
 | Load | `Decider.from_pretrained(id, backend="hf", load_in_8bit=True)` | `Decider.from_pretrained(id, backend="vllm", gpu_memory_utilization=0.85)` |
 | Packed readout | exact logits at each position | top-k `prompt_logprobs` (k = 20); labels outside top-k get a floor, counted in `backend.missing_labels` |
 | Separate readout | exact | exact (`allowed_token_ids` + processed logprobs) |
-| Best for | measurement, quantized checkpoints, small GPUs | serving, throughput, long shared states |
+| Best for | measurement, quantized checkpoints, small GPUs; `packed` gives 2.4x here | serving; `separate` is exact and fastest thanks to the prefix cache |
 
 Any model with a ChatML template (Qwen, and many fine-tunes) works out of the box. Other templates need a
 `ChatFormat` with the strings that start a user turn and end an assistant turn.
