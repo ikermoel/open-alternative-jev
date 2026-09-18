@@ -44,6 +44,7 @@ def main():
     ap.add_argument("--chunk", type=int, default=8, help="items per decide_many call")
     ap.add_argument("--hf-8bit", action="store_true")
     ap.add_argument("--gpu-util", type=float, default=0.85)
+    ap.add_argument("--max-num-seqs", type=int, default=256)
     ap.add_argument("--vllm-kwargs", default="{}", help='JSON of extra vllm.LLM kwargs, e.g. {"gdn_prefill_backend": "triton"}')
     ap.add_argument("--out", required=True)
     args = ap.parse_args()
@@ -62,8 +63,11 @@ def main():
             decider = Decider.from_pretrained(args.model, backend="hf", load_in_8bit=args.hf_8bit, dtype=torch.bfloat16,
                                               device_map={"": 0}, batch_size=8)
         else:
+            # max_num_seqs: hybrid (Mamba/GDN) models need one cache block per decode sequence; vLLM's default of
+            # 1024 exceeds what a 35 GB slice holds. 256 is plenty for this workload.
             decider = Decider.from_pretrained(args.model, backend="vllm", gpu_memory_utilization=args.gpu_util,
-                                              max_model_len=8192, enable_prefix_caching=True, **vllm_kwargs)
+                                              max_model_len=8192, max_num_seqs=args.max_num_seqs,
+                                              enable_prefix_caching=True, **vllm_kwargs)
         pb = PromptBuilder(decider.backend.tokenizer)
         tokens = {"packed": sum(len(pb.packed(s, qs)) for s, qs, _ in items),
                   "separate": sum(len(p) for s, qs, _ in items for p in pb.separate(s, qs))}
