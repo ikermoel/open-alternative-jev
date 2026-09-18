@@ -69,16 +69,16 @@ def panel_set(summary, modes, names, title, fname, acc_ylim):
     bars(axes[2], names, [summary[m]["padded_tokens"] / 1000 for m in modes], colors, lambda v: f"{v:.0f}k")
     axes[2].set_title("Tokens processed")
     fig.suptitle(title, x=0.01, ha="left", fontsize=12, fontweight="bold", color=INK)
-    fig.text(0.01, -0.04, "Blue: packed (this library). Gray: baselines. Qwen3.6-27B, bitsandbytes 8-bit, one H200 MIG 2g.35gb slice, "
+    fig.text(0.01, -0.04, "Blue: Open Alternative to Jev (packed). Gray: baselines. Qwen3.6-27B, bitsandbytes 8-bit, one H200 MIG 2g.35gb slice, "
              "Hugging Face Transformers. Throughput is GPU forward time only.", fontsize=8, color=INK2)
     fig.tight_layout()
     fig.savefig(OUT / fname, dpi=160, bbox_inches="tight")
     plt.close(fig)
 
 
-panel_set(race, ["A", "B4", "C4"], ["A\none at a time", "B\nbatch of 4", "C\npacked,\nstate once"],
+panel_set(race, ["A", "B4", "C4"], ["A\none at a time", "B\nbatch of 4", "Open Alternative\nto Jev\n(state once)"],
           "RACE-H, 250 passages x 4 questions (n = 1000): shared state", "race.png", (85, 97))
-panel_set(mmlu, ["A", "B3", "C3", "C6", "C12"], ["A\none at\na time", "B\nbatch\nof 3", "C\n3 packed", "C\n6 packed", "C\n12 packed"],
+panel_set(mmlu, ["A", "B3", "C3", "C6", "C12"], ["A\none at\na time", "B\nbatch\nof 3", "Open Alt.\nto Jev\n3 packed", "Open Alt.\nto Jev\n6 packed", "Open Alt.\nto Jev\n12 packed"],
           "MMLU, 1200 questions, no shared state", "mmlu.png", (76, 90))
 
 # Interference: answers that change vs A, by position in the packed sequence, against the numerical noise floor.

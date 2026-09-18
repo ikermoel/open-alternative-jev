@@ -16,12 +16,12 @@ This is the shared-state case the library is built for.
 |---|---:|---:|---:|
 | A: one question per forward | 92.6 % | 1.66 | 468,583 |
 | B: batch of 4 (padding) | 92.8 % | 2.00 | 481,924 |
-| **C: packed, state written once** | **92.9 %** | **4.55** | **186,898** |
+| **Open Alternative to Jev** (packed, state written once) | **92.9 %** | **4.55** | **186,898** |
 
 ![RACE-H results](benchmarks/figures/race.png)
 
 Packing writes the passage once instead of four times: 2.5x fewer tokens, 2.3x the throughput of batching,
-same accuracy (C minus A = +0.3 points, 95 % CI -0.9 to +1.4, bootstrap over passages).
+same accuracy (Open Alternative to Jev minus A = +0.3 points, 95 % CI -0.9 to +1.4, bootstrap over passages).
 
 **MMLU, 1200 questions, no shared state.** Accuracy holds up to 12 questions per sequence.
 
@@ -29,14 +29,14 @@ same accuracy (C minus A = +0.3 points, 95 % CI -0.9 to +1.4, bootstrap over pas
 |---|---:|---:|---:|
 | A: one question per forward | 84.2 % | 3.10 | 163,032 |
 | B: batch of 3 (padding) | 83.8 % | 3.88 | 253,638 |
-| C: 3 packed | 84.0 % | 5.44 | 165,432 |
-| C: 6 packed | 84.9 % | 6.21 | 166,032 |
-| C: 12 packed | 84.2 % | 6.71 | 166,332 |
+| Open Alternative to Jev, 3 packed | 84.0 % | 5.44 | 165,432 |
+| Open Alternative to Jev, 6 packed | 84.9 % | 6.21 | 166,032 |
+| Open Alternative to Jev, 12 packed | 84.2 % | 6.71 | 166,332 |
 
 ![MMLU results](benchmarks/figures/mmlu.png)
 
 Read the MMLU speed column carefully: without a shared state, packing does not reduce compute per token.
-C is faster here because batch B wastes 36 % of its tokens on padding and because each forward call has a
+It is faster here because batch B wastes 36 % of its tokens on padding and because each forward call has a
 fixed cost that packing amortizes. A serving engine with continuous batching and no padding would close
 most of that gap. The RACE-H gain is structural and survives any engine.
 
