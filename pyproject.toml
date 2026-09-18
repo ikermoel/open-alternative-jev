@@ -10,7 +10,7 @@ readme = "README.md"
 license = { text = "Apache-2.0" }
 requires-python = ">=3.10"
 authors = [{ name = "Open Alternative Jev contributors" }]
-keywords = ["llm", "classification", "decisions", "logits", "calibration", "vllm", "transformers"]
+keywords = ["jev", "typesafe-jev", "open-source-jev", "jev-alternative", "system-one", "system-one-model", "llm", "classification", "structured-decisions", "typed-decisions", "logits", "logprobs", "calibration", "vllm", "transformers", "qwen", "open-weights"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",

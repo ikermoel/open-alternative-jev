@@ -209,6 +209,10 @@ python benchmarks/scripts/library_compare.py --model Qwen/Qwen3.5-4B --backends 
 
 `benchmarks/docs/RESULTS.md` has the full write-up, including the pilot and its correction.
 
+## Keywords
+
+open-source Jev, Jev alternative, TypeSafe Jev, System One model, System One models open source, typed decisions from LLMs, structured decisions, LLM classification without generation, logprobs, calibrated confidence, prefix caching, vLLM, Transformers, Qwen.
+
 ## License
 
 Apache-2.0.
