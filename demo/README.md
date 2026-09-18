@@ -9,7 +9,13 @@ app_file: app.py
 pinned: false
 license: apache-2.0
 short_description: Typed decisions from an open LLM in one forward pass
+tags:
+  - llm
+  - classification
+  - vllm
 ---
+
+[![GitHub](https://img.shields.io/badge/GitHub-ikermoel%2Fopen--alternative--jev-black?logo=github)](https://github.com/ikermoel/open-alternative-jev)
 
 # Open Alternative to Jev
 
