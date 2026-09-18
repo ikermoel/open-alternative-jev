@@ -31,6 +31,8 @@ echo "=== VLLM SMOKE ==="
 $PY benchmarks/scripts/vllm_smoke.py > logs/vllm_smoke_${SLURM_JOB_ID}.log 2>&1
 grep -E "VLLM_SMOKE_OK" logs/vllm_smoke_${SLURM_JOB_ID}.log || { echo "VLLM_SMOKE_FAILED; last 60 lines:"; grep -vE "^\s*$" logs/vllm_smoke_${SLURM_JOB_ID}.log | tail -60 | cut -c1-300; }
 
+sleep 20  # let the vLLM worker processes release the MIG device before the next CUDA context (NVML "Unknown Error" seen otherwise)
+nvidia-smi --query-gpu=name,memory.used --format=csv,noheader | head -1
 echo "=== PYTEST ==="
 $PY -m pytest -q -p no:cacheprovider tests > logs/pytest_${SLURM_JOB_ID}.log 2>&1
 echo "PYTEST_EXIT=$?"
