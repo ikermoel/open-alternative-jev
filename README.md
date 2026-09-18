@@ -2,7 +2,9 @@
 
 **Open-source System One models: typed, calibrated decisions from any open-weights LLM, in one forward pass.**
 An open alternative to the idea behind TypeSafe's Jev, running on your own GPU with models you already have.
-Python package `open-alternative-jev`, import name `so1` ("System One"). No text is generated: the model reads the state once and every question is answered from the next-token distribution at its own position, restricted to the options you give.
+Python package `open-alternative-jev`, import name `so1` ("System One").
+
+**Try it now:** [live demo on Hugging Face Spaces](https://huggingface.co/spaces/IkerMoel/open-alternative-jev) with Qwen3.5-4B, no install. No text is generated: the model reads the state once and every question is answered from the next-token distribution at its own position, restricted to the options you give.
 
 ## Results
 
