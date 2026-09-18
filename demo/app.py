@@ -97,8 +97,10 @@ with gr.Blocks(title="Open Alternative to Jev") as demo:
     rows, q_boxes, o_boxes = [], [], []
     for i in range(MAX_QUESTIONS):
         with gr.Row(visible=i < len(EXAMPLE_QUESTIONS)) as row:
-            q = gr.Textbox(label=f"Question {i + 1}", value=EXAMPLE_QUESTIONS[i][0] if i < len(EXAMPLE_QUESTIONS) else "", scale=3)
-            o = gr.Textbox(label="Possible answers (comma-separated)", value=EXAMPLE_QUESTIONS[i][1] if i < len(EXAMPLE_QUESTIONS) else "", scale=3)
+            q = gr.Textbox(label=f"Question {i + 1}", value=EXAMPLE_QUESTIONS[i][0] if i < len(EXAMPLE_QUESTIONS) else "",
+                           lines=1, max_lines=3, scale=3)
+            o = gr.Textbox(label="Possible answers (comma-separated)", value=EXAMPLE_QUESTIONS[i][1] if i < len(EXAMPLE_QUESTIONS) else "",
+                           lines=1, max_lines=3, scale=3)
         rows.append(row)
         q_boxes.append(q)
         o_boxes.append(o)
