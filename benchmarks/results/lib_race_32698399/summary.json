@@ -1,0 +1,60 @@
+{
+  "model": "/projects/ikmo5391/hf/hub/models--Qwen--Qwen3.5-4B/snapshots/851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
+  "passages": 100,
+  "results": {
+    "hf/separate": {
+      "backend": "hf",
+      "mode": "separate",
+      "questions": 400,
+      "accuracy": 0.8725,
+      "ece": 0.045016076277105764,
+      "mean_confidence": 0.9148957154852545,
+      "seconds": 19.98995855206158,
+      "questions_per_second": 20.01004649200474,
+      "tokens": 179807,
+      "missing_labels": 0
+    },
+    "hf/packed": {
+      "backend": "hf",
+      "mode": "packed",
+      "questions": 400,
+      "accuracy": 0.845,
+      "ece": 0.03738629539301007,
+      "mean_confidence": 0.8761871427060497,
+      "seconds": 8.07195531995967,
+      "questions_per_second": 49.55428816744225,
+      "tokens": 71216,
+      "missing_labels": 0,
+      "agreement_with_hf_separate": 0.9375,
+      "mean_abs_prob_diff_vs_baseline": 0.039969234105118316
+    },
+    "vllm/separate": {
+      "backend": "vllm",
+      "mode": "separate",
+      "questions": 400,
+      "accuracy": 0.87,
+      "ece": 0.05492584019469686,
+      "mean_confidence": 0.9146839452580194,
+      "seconds": 5.5669896099716425,
+      "questions_per_second": 71.85211901303289,
+      "tokens": 179807,
+      "missing_labels": 0,
+      "agreement_with_hf_separate": 0.9975,
+      "mean_abs_prob_diff_vs_baseline": 0.002786205491301488
+    },
+    "vllm/packed": {
+      "backend": "vllm",
+      "mode": "packed",
+      "questions": 400,
+      "accuracy": 0.8425,
+      "ece": 0.03448309197629927,
+      "mean_confidence": 0.8755036392865437,
+      "seconds": 10.332186378072947,
+      "questions_per_second": 38.713974502907085,
+      "tokens": 71216,
+      "missing_labels": 0,
+      "agreement_with_hf_separate": 0.9375,
+      "mean_abs_prob_diff_vs_baseline": 0.0401143193624875
+    }
+  }
+}

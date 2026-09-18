@@ -82,14 +82,15 @@ calibrated = [scaler.apply(d) for d in decisions]
 ### The library itself, on both backends
 
 Same code path users get, on a smaller model: Qwen3.5-4B (BF16), RACE-H, 100 passages x 4 questions, one
-H200 MIG slice. Wall-clock time per question including tokenization, from `benchmarks/scripts/library_compare.py`.
+H200 MIG 3g.71gb slice. Wall-clock time per question including tokenization, from `benchmarks/scripts/library_compare.py`
+(run `lib_race_32698399`).
 
 | Backend / mode | Accuracy | Questions / s | Tokens sent | Agreement with HF separate |
 |---|---:|---:|---:|---:|
-| Transformers, `separate` | 87.3 % | 11.2 | 179,807 | |
-| Transformers, `packed` | 84.5 % | 27.0 | 71,216 | 93.8 % |
-| vLLM, `separate` (prefix cache + `allowed_token_ids`) | 87.0 % | 39.8 | 179,807 | 99.8 % |
-| vLLM, `packed` (`prompt_logprobs`) | 84.3 % | 32.4 | 71,216 | 93.8 % |
+| Transformers, `separate` | 87.3 % | 20.0 | 179,807 | |
+| Transformers, `packed` | 84.5 % | 49.6 | 71,216 | 93.8 % |
+| vLLM, `separate` (prefix cache + `allowed_token_ids`) | 87.0 % | 71.9 | 179,807 | 99.8 % |
+| vLLM, `packed` (`prompt_logprobs`) | 84.3 % | 38.7 | 71,216 | 93.8 % |
 
 Three things this table says that the 27B tables do not:
 
@@ -179,7 +180,7 @@ Two modes:
 | Load | `Decider.from_pretrained(id, backend="hf", load_in_8bit=True)` | `Decider.from_pretrained(id, backend="vllm", gpu_memory_utilization=0.85)` |
 | Packed readout | exact logits at each position | top-k `prompt_logprobs` (k = 20); labels outside top-k get a floor, counted in `backend.missing_labels` |
 | Separate readout | exact | exact (`allowed_token_ids` + processed logprobs) |
-| Best for | measurement, quantized checkpoints, small GPUs; `packed` gives 2.4x here | serving; `separate` is exact and fastest thanks to the prefix cache |
+| Best for | measurement, quantized checkpoints, small GPUs; `packed` gives 2.5x here | serving; `separate` is exact and fastest thanks to the prefix cache |
 
 Any model with a ChatML template (Qwen, and many fine-tunes) works out of the box. Other templates need a
 `ChatFormat` with the strings that start a user turn and end an assistant turn.
