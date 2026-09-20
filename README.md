@@ -48,7 +48,7 @@ most of that gap. The RACE-H gain is structural and survives any engine.
 > **The correction that made this README honest.** Our first pilot reported "1.4x faster than batching" on
 > MMLU. Regressing forward time on token counts showed that B and C cost exactly the same per token
 > (0.96 vs 0.97 ms) and that the whole difference was padding waste in the batch. We kept the pilot and the
-> analysis in `benchmarks/docs/RESULTS.md` (Spanish) so you can check the reasoning, and we designed the
+> analysis in the write-up `benchmarks/docs/RESULTS.md` so you can check the reasoning, and we designed the
 > RACE-H run so that the baseline had almost no padding (2.8 %).
 
 ### Interference: accuracy holds, individual answers move
@@ -209,7 +209,8 @@ python benchmarks/scripts/benchmark_v2.py --data race1000.jsonl --group-size 4 -
 python benchmarks/scripts/library_compare.py --model Qwen/Qwen3.5-4B --backends hf,vllm --out results/lib
 ```
 
-`benchmarks/docs/RESULTS.md` has the full write-up, including the pilot and its correction.
+`benchmarks/docs/RESULTS.md` is the full write-up: the question, the first result, why it was wrong, the corrected
+experiments, interference, the small-model finding and calibration. Spanish original in `RESULTS.es.md`.
 
 ## Keywords
 

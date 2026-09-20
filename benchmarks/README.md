@@ -11,7 +11,7 @@ Everything the top-level README reports comes from here. Nothing is trained; no 
 | `scripts/make_figures.py` | Regenerates `figures/` from `results/`. |
 | `scripts/benchmark.py`, `prepare.py`, `report.py` | The original 300-question pilot. Kept for the record; its result was corrected by `analyze_run.py` (see `docs/RESULTS.md`). |
 | `results/` | Per-question predictions, per-call timings, summaries and analyses of every run. |
-| `docs/RESULTS.md` | Full write-up, in Spanish: pilot, the padding correction, and the v2 runs. |
+| `docs/RESULTS.md` | Full write-up: the question, the pilot, the padding correction, the corrected runs, interference, the 4B finding and calibration. `docs/RESULTS.es.md` is the Spanish original. |
 
 Model: Qwen3.6-27B (official post-trained checkpoint, revision pinned in `data/manifest.json`), bitsandbytes
 LLM.int8 with BF16 non-quantized modules, `sdpa` attention, Transformers 5.16, one NVIDIA H200 MIG 2g.35gb

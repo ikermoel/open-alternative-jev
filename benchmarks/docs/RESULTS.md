@@ -1,126 +1,211 @@
-# Resultados del piloto — 17 de septiembre de 2026
+# What happens when you ask a model N questions in one forward pass
 
-Trabajo Slurm 32677666: completado, código de salida 0. Qwen3.6-27B oficial, bitsandbytes 8-bit, GPU H200 MIG 2g.35gb. 300 preguntas MMLU test seleccionadas con semilla fija. No se entrenó el modelo ni se modificó el motor.
+A write-up of the experiments behind Open Alternative to Jev, in the order they happened, including the
+result we got wrong and how we found out. Every number comes from a file in `benchmarks/results/`; the
+scripts that produced them are in `benchmarks/scripts/`. Spanish original: `RESULTS.es.md`.
 
-| Modo | Aciertos | Precisión | Preguntas/segundo |
-|---|---:|---:|---:|
-| A: una por una | 253/300 | 84,33 % | 3,14 |
-| B: batch de tres | 252/300 | 84,00 % | 4,01 |
-| C: tres concatenadas | 252/300 | 84,00 % | 5,57 |
-| C con orden rotado | 253/300 | 84,33 % | 5,57 |
+## 1. The question
 
-C procesó 1.39 veces más preguntas por segundo que B (aproximadamente 28 % menos tiempo de forward total), y 1,78 veces más que A. Este tiempo excluye carga del modelo, tokenización y preparación de tensores: no es latencia de servicio extremo a extremo. Una sola corrida; falta repetir mediciones de rendimiento.
+A causal language model produces a next-token distribution at every position of its input in a single
+forward pass. Chat APIs hide this: you get one generated answer per call. But if you write a state (a
+document, a ticket, a log line) followed by several questions, each ending in an answer slot, you can read
+the distribution at every slot at once and restrict it to a fixed set of option letters. No text is
+generated, every answer is one of your options, and it comes with a probability.
 
-La diferencia C−A fue −0,33 puntos porcentuales, con intervalo bootstrap por grupos del 95 % entre −2,67 y +2,00 puntos. Para C−B, intervalo entre -2.33 y 2.67 puntos. No demuestra equivalencia ni descarta caídas pequeñas.
+That is the mechanism TypeSafe's Jev product exposes. We wanted to know three things about doing it with a
+stock open-weights model, no training:
 
-Cambiar el orden alteró 28/300 respuestas (9,33 %), aunque la precisión total quedó parecida. C difirió de A en 19/300 respuestas; B difirió de A en 6/300. En las primeras posiciones de C, que tienen el mismo prefijo causal que A, cambiaron 3/100 respuestas. También variaron probabilidades con ese prefijo idéntico: por tanto, no se puede atribuir toda variación a interferencia semántica. La cuantización y las distintas formas de cómputo son posibles causas pendientes de aislar.
+- Does reading several answers from one sequence keep the accuracy of asking one question at a time?
+- Is it actually cheaper, and compared with what?
+- Are the probabilities worth anything?
 
-Memoria máxima asignada observada: 28,56 GiB (30,66 GB decimales); máxima reservada por PyTorch: 29,20 GiB. Son métricas del allocator, no toda la memoria que podría registrar el driver. La partición asignada tenía 34.896.609.280 bytes.
+Throughout, three modes are compared on the same questions with the same model:
 
-Las probabilidades son softmax sobre A/B/C/D, sin calibrar. ECE aproximado: A 0,0645; B 0,0697; C 0,0586. Brier: A 0,2274; B 0,2284; C 0,2326. NLL: A 0,4836; B 0,4953; C 0,5064. No hay evidencia de una mejora uniforme en calidad probabilística; el ECE con 300 ejemplos es ruidoso. No se ajustó temperatura con etiquetas de test.
+- **A**: one question per forward pass. The reference.
+- **B**: k independent sequences in one padded batch. Conventional batching.
+- **C**: k questions concatenated into one sequence, one readout position per question. The idea under test.
 
-## Interpretación
+Setup for the 27B runs: `Qwen/Qwen3.6-27B`, the official post-trained checkpoint at a pinned revision,
+bitsandbytes LLM.int8 with BF16 non-quantized modules, Transformers 5.16, one NVIDIA H200 MIG 2g.35gb slice
+(35 GB). Zero-shot, thinking disabled, the chat template's own turns. Each question is rendered as a user
+turn; in C the turns are separated by a fixed `_` placeholder answer, never by the model's own prediction.
+Probabilities are a softmax over the option letters only. Timing is GPU forward time, excluding model load,
+tokenization and tensor preparation, after a warm-up of every shape.
 
-La idea supera este piloto: mayor velocidad que batching convencional y precisión agregada similar, dentro del límite de VRAM. No demuestra independencia entre preguntas, confianza calibrada ni equivalencia con Jev. Siguiente paso propuesto, aún no ejecutado: muestra mayor y repeticiones temporales, separando sensibilidad al orden de efectos numéricos.
+Two facts about this model matter later. Its 64 layers are 48 gated-DeltaNet linear-attention layers and
+16 full-attention layers; on the cluster the linear layers ran on PyTorch fallback kernels (no `fla`,
+`triton` or `flash-attn`), so absolute throughput is slow and only ratios between modes are meaningful. And
+because the linear layers carry a recurrent state, a packed sequence cannot be split into independent
+segments with an attention mask, so B has to be a real padded batch.
 
-## Archivos
+## 2. The first result: 1.4x faster than batching
 
-Resultados crudos, métricas, auditoría y metadatos: `results/mmlu_32677666/`. Dataset y revisiones: `data/`. Log completo: `logs/mmlu_32677666.log`. El primer trabajo 32677581 falló antes de recoger medidas por un cambio de interfaz del tokenizador, corregido con `return_dict=False`; no entra en estos resultados.
+Pilot on 300 uniformly sampled MMLU test questions, groups of three (`results/mmlu_32677666/`):
 
-## Análisis posterior del piloto — 17 de septiembre de 2026
+| Mode | Accuracy | Questions / s |
+|---|---:|---:|
+| A: one at a time | 84.3 % | 3.14 |
+| B: batch of 3 | 84.0 % | 4.01 |
+| C: 3 packed | 84.0 % | 5.57 |
+| C, rotated order | 84.3 % | 5.57 |
 
-Sin GPU, sobre los registros por llamada de `results/mmlu_32677666/` (`scripts/analyze_run.py`, salida en `analysis.json`).
+Accuracy held, and C processed 1.39x more questions per second than batching. That looked like the
+headline: "packing beats batching".
 
-**La ventaja de velocidad de C sobre B es padding, no ahorro de cómputo.** Regresión tiempo = fijo + pendiente × tokens_con_padding, por modo:
+## 3. Why it was wrong
 
-| Modo | Fijo por llamada | ms por token | r | Tokens desperdiciados en padding |
+The pilot logged, for every forward call, its wall time, the number of real tokens and the number of tokens
+after padding. Regressing time on padded tokens per mode (`scripts/analyze_run.py`):
+
+| Mode | Fixed cost per call | Cost per padded token | r | Tokens wasted on padding |
 |---|---:|---:|---:|---:|
-| A | 0,217 s | 0,77 | 0,986 | 0 % |
-| B | 0,163 s | 0,96 | 0,998 | 35,1 % |
-| C | 0,148 s | 0,97 | 0,997 | 0 % |
+| A | 0.217 s | 0.77 ms | 0.986 | 0 % |
+| B | 0.163 s | 0.96 ms | 0.998 | 35.1 % |
+| C | 0.148 s | 0.97 ms | 0.997 | 0 % |
 
-B y C cuestan lo mismo por token procesado. B rellena las tres secuencias hasta la más larga y procesa 35 % más tokens; eso, más el costo fijo, explica el 1,39×. Un motor sin padding (vLLM, SGLang, o HF con atención de longitud variable) borraría esa ventaja para preguntas no relacionadas. El ahorro estructural de concatenar solo existe con un estado compartido: P + k·q tokens frente a k·(P + q). Eso es lo que mide la v2 con RACE.
+B and C cost the same per token. B pads its three sequences to the longest one and processes 35 % more
+tokens; that, plus the fixed cost per call that C amortizes over three questions, is the entire 1.39x. Any
+engine that batches without padding (vLLM, SGLang, Transformers with variable-length attention) would erase
+it for unrelated questions.
 
-**Hay interferencia real, no solo ruido numérico.** La posición 0 de C tiene exactamente el mismo prefijo causal que A; sus diferencias son el piso de ruido (kernels int8 con distinta forma de batch). Posiciones 1 y 2 de C están 3–4 veces por encima de ese piso, aunque la precisión agregada no cayó.
+The reason packing could save compute at all is structural, not numerical: if N questions share a context
+of P tokens and each question is q tokens, batching processes N x (P + q) tokens and packing processes
+P + N x q. With no shared context, P = 0 and there is nothing to save. MMLU questions share nothing, so the
+pilot could never have shown a real gain. It had to be redesigned around a shared state.
 
-| Modo y posición | Respuestas cambiadas frente a A | Media de \|Δp\| | Máximo de \|Δp\| |
+## 4. The corrected experiment
+
+Two runs, larger, with the padding confound controlled (`results/v2_race_32679039/`,
+`results/v2_mmlu_32679038/`).
+
+**RACE-H, 250 passages with exactly 4 questions each (n = 1000).** One passage, four multiple-choice
+questions: the shared-state case. In C the passage appears only in the first turn; later turns carry only
+the question. B's padding is small here (2.8 %) because the passages dominate sequence length.
+
+| Mode | Accuracy | Questions / s | Tokens processed |
 |---|---:|---:|---:|
-| B, cualquier posición | 2/100 | 0,010–0,014 | 0,29 |
-| C, posición 0 (piso de ruido) | 3/100 | 0,013 | 0,15 |
-| C, posición 1 | 11/100 | 0,047 | 0,77 |
-| C, posición 2 | 5/100 | 0,053 | 0,60 |
+| A: one at a time | 92.6 % | 1.66 | 468,583 |
+| B: batch of 4 | 92.8 % | 2.00 | 481,924 |
+| C: 4 packed, passage once | 92.9 % | 4.55 | 186,898 |
+| C, rotated order | 93.6 % | 4.57 | 186,898 |
 
-**Calibración.** El modelo sale sobreconfiado unos 6 puntos (confianza media 0,90, precisión 0,84). Escalado de temperatura ajustado en dos pliegues cruzados, sin evaluar nunca sobre el pliegue de ajuste: T ≈ 1,45–1,55 en todos los modos; ECE de 0,064 a 0,032 en A y de 0,059 a 0,028 en C. Con 300 ejemplos el ECE es ruidoso; la dirección es clara, la magnitud no.
+C processes 2.5x fewer tokens than A or B and answers 2.3x more questions per second than batching. The
+cost per token is again the same in every mode (0.95 to 0.97 ms), so this gain is structural and survives
+the choice of engine.
 
-**Arquitectura del modelo.** `config.json` de Qwen3.6-27B: 64 capas, 48 de atención lineal (Gated DeltaNet) y 16 de atención completa, intervalo 4. En el entorno del clúster no hay `fla`, `triton`, `causal_conv1d` ni `flash_attn`: la atención lineal corre en el respaldo de PyTorch. Consecuencias: los tiempos absolutos no representan un motor optimizado, y B no puede empaquetarse con una máscara bloque-diagonal en esta arquitectura, porque el estado recurrente cruza cualquier máscara.
+Accuracy: C minus A = +0.3 points, 95 % bootstrap interval over passages from -0.9 to +1.4. C minus B =
++0.1, interval -1.0 to +1.2. The apparent ordering 92.6, 92.8, 92.9 is three questions out of a thousand;
+B, which uses the identical prompt as A in a padded batch, already moves 15 answers on its own.
 
-## Siguiente paso preparado: v2 (pendiente de aprobación, no enviado)
+**MMLU, 1200 questions (the pilot's 300 first, plus 900 new), groups of 3, 6 and 12.** The no-shared-state
+case, used to see how far packing can go. On the pilot's 300 questions, A reproduces 84.33 % exactly.
 
-Scripts y datos ya están en el clúster y probados en la Mac con Qwen2.5-0.5B en CPU (A_pad, B y la posición 0 de C reproducen A hasta 1e-6).
-
-- `mmlu1200.jsonl`: las 300 del piloto más 900 nuevas disjuntas, grupos de 12. Modos A, A_pad (control de ruido de forma), B3, C3, C3_rot, C6, C12. Estimación: unos 40 minutos.
-- `race1000.jsonl`: 250 pasajes de RACE-high test con exactamente 4 preguntas. Modos A, B4, C4, C4_rot; en C el pasaje va solo en el primer turno. Estimación: unos 30 minutos. En la prueba local C4 procesó 2,6 veces menos tokens que A.
-
-```bash
-sbatch --export=ALL,DATASET=mmlu scripts/benchmark_v2.sbatch
-sbatch --export=ALL,DATASET=race scripts/benchmark_v2.sbatch
-```
-
-## Resultados v2, parte 1: estado compartido (RACE) — 17 de septiembre de 2026
-
-Trabajo Slurm 32679039, código de salida 0. 250 pasajes de RACE-high test con exactamente 4 preguntas cada uno (1000 preguntas), mismo modelo y cuantización que el piloto. En C el pasaje aparece solo en el primer turno; las tres preguntas siguientes van como turnos nuevos sin repetir el pasaje. Archivos en `results/v2_race_32679039/`, log en `logs/v2_32679039.log`.
-
-| Modo | Precisión | Preguntas/segundo | Tokens procesados | ECE (crudo) |
+| Mode | Accuracy | Difference vs A (95 % CI) | Questions / s | Tokens processed |
 |---|---:|---:|---:|---:|
-| A: una por una | 92,60 % | 1,66 | 468.583 | 0,028 |
-| B4: batch de cuatro | 92,80 % | 2,00 | 481.924 (2,8 % padding) | 0,031 |
-| C4: pasaje una vez, cuatro preguntas | 92,90 % | 4,55 | 186.898 | 0,011 |
-| C4 con orden rotado | 93,60 % | 4,57 | 186.898 | 0,015 |
+| A: one at a time | 84.2 % | | 3.10 | 163,032 |
+| A_pad: A right-padded to 1024 tokens | 83.9 % | -0.25 (-1.1 to +0.7) | 0.91 | 1,228,800 |
+| B: batch of 3 | 83.8 % | -0.42 (-1.2 to +0.3) | 3.88 | 253,638 |
+| C: 3 packed | 84.0 % | -0.17 (-1.3 to +1.0) | 5.44 | 165,432 |
+| C: 3 packed, rotated | 83.3 % | -0.92 (-2.1 to +0.3) | 5.46 | 165,432 |
+| C: 6 packed | 84.9 % | +0.75 (-0.6 to +2.2) | 6.21 | 166,032 |
+| C: 12 packed | 84.2 % | 0.00 (-1.8 to +1.7) | 6.71 | 166,332 |
 
-**Aquí el ahorro sí es real.** C4 procesa 2,5 veces menos tokens que A o B4 y responde 2,3 veces más preguntas por segundo que B4. B4 casi no tiene padding (los pasajes dominan la longitud), así que esta ventaja no es artefacto: es la estructura P + 4·q frente a 4·(P + q). El costo por token es el mismo en todos los modos (0,95–0,97 ms), como en el piloto.
+No mode differs from A beyond noise, up to twelve questions per sequence. With 1200 questions the interval
+is about +/-1.2 points, so drops smaller than that remain possible. C is faster than A and B here for the
+reasons already identified: padding waste in B (35.7 %) and amortization of the 0.15 to 0.22 s fixed cost
+per call. It is not cheaper per token.
 
-**La precisión no cae.** C4 − A = +0,3 puntos, intervalo bootstrap por pasaje del 95 % entre −0,9 y +1,4. C4 − B4 = +0,1 puntos, intervalo entre −1,0 y +1,2. Por posición, C coincide con A sobre las mismas preguntas dentro del ruido:
+## 5. Interference: accuracy holds, individual answers move
 
-| Posición en C4 | Precisión C4 | Precisión A, mismas preguntas | Respuestas cambiadas frente a A |
+Later questions in a packed sequence can attend to earlier questions and to the placeholders between
+them. To measure the effect honestly we needed a noise floor, because int8 kernels give slightly different
+logits for the same prefix when the batch has a different shape.
+
+`A_pad` provides that floor: the exact prompt of A, one question at a time, right-padded to a fixed
+length. Nothing else in the context, only the tensor shape changes. It flips 32 of 1200 answers (2.7 %)
+with a mean absolute probability change of 0.0125. B, same prompt in a padded batch, flips 2.3 % with 0.0126.
+That is the noise.
+
+Packing is three times above it:
+
+| Mode and position | Answers changed vs A | Mean abs. probability change |
+|---|---:|---:|
+| A_pad (noise floor) | 2.7 % | 0.013 |
+| B, any position | 2.3 % | 0.013 |
+| C: 3 packed, position 0 (same prefix as A) | 2.5 % | 0.013 |
+| C: 3 packed, positions 1 and 2 | 8.0 % | 0.036 |
+| C: 6 packed, all | 7.4 % | 0.043 |
+| C: 12 packed, all | 8.7 % | 0.050 |
+
+Position 0 of a packed sequence has exactly A's causal prefix and sits on the noise floor, which is also a
+check that the readout indices are right. On RACE-H the flips grow with distance from the passage: 1, 9, 10
+and 19 out of 250 at positions 0 to 3. Rotating the question order changes 8.2 % of MMLU answers and 2.4 %
+of RACE-H answers.
+
+The changes are symmetric: as many answers go from wrong to right as from right to wrong, which is why
+aggregate accuracy does not move. But a specific decision can depend on which questions accompany it and
+in what order. For a library that means: `packed` when you care about throughput on a shared state,
+`separate` when a decision must not change with the batch it arrived in.
+
+## 6. The finding: small models pay for packing
+
+The library was then run end to end, with both backends, on a smaller model: `Qwen/Qwen3.5-4B` in BF16,
+RACE-H, 100 passages x 4 questions, one H200 MIG 3g.71gb slice, wall-clock time including tokenization
+(`results/lib_race_32698399/`). `separate` is one sequence per question with the full passage; on vLLM it
+uses constrained one-token generation with `allowed_token_ids` and the engine's prefix cache.
+
+| Backend, mode | Accuracy | Questions / s | Tokens sent | Agreement with Transformers `separate` |
+|---|---:|---:|---:|---:|
+| Transformers, `separate` | 87.3 % | 20.0 | 179,807 | |
+| Transformers, `packed` | 84.5 % | 49.6 | 71,216 | 93.8 % |
+| vLLM, `separate` | 87.0 % | 71.9 | 179,807 | 99.8 % |
+| vLLM, `packed` | 84.3 % | 38.7 | 71,216 | 93.8 % |
+
+Two things the 27B runs did not show.
+
+**Packing costs the 4B model 2.8 points** (11 of 400 answers) where the 27B lost nothing. Interference is
+the same mechanism, but a smaller model is less able to keep four questions apart. This is the most useful
+caveat in the project: the "accuracy holds" result is a property of the model size, not of the method.
+
+**On vLLM, `separate` is the fastest mode**, 1.9x faster than packed, with no accuracy cost. The prefix
+cache already encodes the shared passage once, which is the saving packing was designed to capture, and
+reading exact label scores from one constrained token is cheaper than extracting top-k `prompt_logprobs` at
+every interior position. Packing's throughput advantage is real on Transformers (2.5x here, no prefix
+cache) and gone on an engine that has one.
+
+The two backends agree: same answer 99.8 % of the time in `separate` mode, mean absolute probability
+difference 0.003.
+
+## 7. Calibration: one scalar
+
+Raw confidence is too high. On MMLU with the 27B, mean confidence is 0.896 against 0.842 accuracy. We
+fitted a single temperature by cross-validation: fit on one half, evaluate on the other, and the reverse,
+never scoring the fold used for fitting.
+
+| Run and mode | Fitted T | ECE raw | ECE scaled |
 |---|---:|---:|---:|
-| 0 (mismo prefijo que A) | 93,2 % | 93,6 % | 1/250 |
-| 1 | 94,4 % | 93,2 % | 9/250 |
-| 2 | 93,2 % | 92,4 % | 10/250 |
-| 3 | 90,8 % | 91,2 % | 19/250 |
+| MMLU, A | 1.45 to 1.50 | 5.4 % | 2.1 % |
+| MMLU, C: 12 packed | 1.30 | 3.8 % | 1.2 % |
+| RACE-H, A | 1.30 to 1.35 | 2.8 % | 1.1 % |
+| RACE-H, C: 4 packed | 1.00 to 1.10 | 1.1 % | 1.6 % |
 
-**Pero la interferencia crece con la posición.** Los cambios de respuesta frente a A pasan de 1 a 19 por cada 250 conforme la pregunta está más lejos del pasaje, con cambios simétricos (tantos aciertos ganados como perdidos). Rotar el orden cambió 2,4 % de las respuestas. Con cuatro preguntas no cuesta precisión; no sabemos qué pasa con más.
+Temperature does not change which option wins; it only reshapes the probabilities. One fitted scalar
+brings the expected calibration error from 5.4 % to 2.1 % on MMLU. Packed modes come out less
+over-confident than one-at-a-time scoring in every run (raw ECE 3.8 % vs 5.4 % on MMLU, 1.1 % vs 2.8 % on
+RACE-H); we have no established explanation, and with 1000 to 1200 examples the ECE is noisy enough that the
+direction is clear and the magnitude is not. RACE-H packed was already near calibrated, and scaling does
+not improve it.
 
-**Calibración.** C4 sale menos sobreconfiado que A (confianza media 0,927 frente a 0,949) y su ECE crudo es menor (0,011 frente a 0,028). La temperatura cruzada apenas lo mueve (T ≈ 1,0–1,1), mientras que A necesita T ≈ 1,3. No hay explicación establecida para esta diferencia; con 1000 ejemplos el ECE sigue siendo ruidoso.
+## What this does and does not establish
 
-Memoria máxima asignada: 28,3 GiB en C4 y 29,3 GiB en B4, dentro de la partición de 35 GB.
-
-## Resultados v2, parte 2: MMLU 1200 con grupos de 3, 6 y 12 — 17 de septiembre de 2026
-
-Trabajo Slurm 32679038, código de salida 0, 48 minutos (compartió nodo con el trabajo de RACE la mayor parte del tiempo). 1200 preguntas: las 300 del piloto primero, más 900 nuevas disjuntas. Sobre las 300 del piloto, A reproduce exactamente el 84,33 % del piloto. Archivos en `results/v2_mmlu_32679038/`, log en `logs/v2_32679038.log`.
-
-| Modo | Precisión | Diferencia con A (IC 95 % por grupo) | Preguntas/segundo | Tokens procesados | ECE (crudo) |
-|---|---:|---:|---:|---:|---:|
-| A: una por una | 84,17 % | — | 3,10 | 163.032 | 0,054 |
-| A_pad: A rellenado a 1024 | 83,92 % | −0,25 (−1,1 a +0,7) | 0,91 | 1.228.800 | 0,057 |
-| B3: batch de tres | 83,75 % | −0,42 (−1,2 a +0,3) | 3,88 | 253.638 (35,7 % padding) | 0,058 |
-| C3: tres concatenadas | 84,00 % | −0,17 (−1,3 a +1,0) | 5,44 | 165.432 | 0,052 |
-| C3 con orden rotado | 83,25 % | −0,92 (−2,1 a +0,3) | 5,46 | 165.432 | 0,055 |
-| C6: seis concatenadas | 84,92 % | +0,75 (−0,6 a +2,2) | 6,21 | 166.032 | 0,047 |
-| C12: doce concatenadas | 84,17 % | 0,00 (−1,8 a +1,7) | 6,71 | 166.332 | 0,038 |
-
-**Precisión.** Ningún modo difiere de A más allá del ruido, hasta doce preguntas por secuencia. Con 1200 preguntas el intervalo es de unos ±1,2 puntos; caídas menores que eso siguen sin poder descartarse. Por posición dentro de C12, C y A coinciden sobre las mismas preguntas dentro de ±6 puntos con 100 preguntas por posición, sin tendencia clara a lo largo de la secuencia.
-
-**Piso de ruido medido directamente.** A_pad tiene exactamente el mismo prefijo que A y solo cambia la forma del tensor: cambió 32 de 1200 respuestas (2,7 %), con diferencia media de probabilidad 0,0125. B3 da lo mismo (2,3 %, 0,0126). Ese es el ruido de los kernels int8 con distinta forma de batch, sin ninguna pregunta ajena en el contexto.
-
-**Interferencia, separada del ruido.** Las posiciones 1 y 2 de C3 cambian 8 % de las respuestas frente a A, con diferencia media de probabilidad 0,036: tres veces el piso de ruido. C6 llega a 7,4 % y C12 a 8,7 % (media 0,050). Rotar el orden en C3 cambia 8,2 % de las respuestas. La interferencia es real y crece poco con el tamaño de grupo; los cambios son simétricos y no mueven la precisión agregada.
-
-**Rendimiento.** El costo por token vuelve a ser el mismo en todos los modos (0,95–1,02 ms). C gana frente a A y B3 por dos razones ya identificadas: B3 desperdicia 35,7 % de tokens en padding, y cada llamada tiene un costo fijo de 0,15–0,22 s que C amortiza entre más preguntas. Sin estado compartido, C no ahorra cómputo por token; un motor con batching continuo sin padding reduciría la diferencia frente a B a la amortización del costo fijo.
-
-**Calibración.** Sobreconfianza cruda de unos 5 puntos en A (confianza 0,896, precisión 0,842). El ECE crudo baja al concatenar más preguntas (0,054 en A, 0,038 en C12), igual que en RACE, y la temperatura cruzada lo lleva a 0,01–0,03 en todos los modos con T entre 1,3 y 1,5.
-
-## Lectura conjunta de la v2
-
-1. Leer varias posiciones de una pasada conserva la precisión de este modelo hasta 12 preguntas sin contexto compartido y 4 con pasaje compartido, dentro de ±1 punto.
-2. El ahorro real de cómputo aparece solo con estado compartido: 2,5 veces menos tokens y 2,3 veces más preguntas por segundo en RACE frente a batching sin apenas padding. Sin estado compartido el ahorro es amortización y padding, no cómputo.
-3. Las respuestas individuales sí se mueven por interferencia (6–9 % de cambios, tres veces el ruido numérico) y por el orden. Para una librería esto significa que una decisión concreta puede cambiar según qué otras preguntas la acompañen, aunque la tasa de acierto no cambie.
-4. La confianza cruda está sobreestimada unos 5 puntos; un escalar de temperatura ajustado con validación cruzada la corrige casi por completo. Sigue sin evaluarse en otros modelos ni precisiones.
+- Reading several typed answers from one forward pass keeps aggregate accuracy on a 27B model up to 12
+  questions with no shared state and 4 with a shared passage, within about a point. On a 4B model it costs
+  about 3 points.
+- The compute saving is structural and only exists with a shared state; it is captured equally well by a
+  prefix cache. Without one, packing is 2.5x on Transformers. With one, keep questions separate.
+- Individual answers depend on their neighbours in 6 to 9 % of cases, three times the numerical noise
+  floor, without moving accuracy.
+- Raw probabilities are over-confident by about 5 points and one cross-validated scalar fixes most of it.
+- Not measured: a generation-with-reasoning baseline (the comparison TypeSafe's charts make), other model
+  families, BF16 versus int8 for the same checkpoint, and anything about how Jev itself works. The pilot
+  and the analysis that corrected it are kept in `results/mmlu_32677666/` on purpose.
