@@ -6,6 +6,8 @@
 An open alternative to the idea behind TypeSafe's Jev, running on your own GPU with models you already have.
 Python package `open-alternative-jev`, import name `so1` ("System One").
 Also known as: open Jev, Jev alternative, open-source System One model.
+This replaces the library, not the endpoint: it is a Python package you call in-process, and there is no HTTP server
+or drop-in API for the official Jev SDK.
 
 **Try it now:** [live demo on Hugging Face Spaces](https://huggingface.co/spaces/IkerMoel/open-alternative-jev) with Qwen3.5-4B, no install. No text is generated: the model reads the state once and every question is answered from the next-token distribution at its own position, restricted to the options you give.
 
@@ -184,6 +186,24 @@ Two modes:
 
 Any model with a ChatML template (Qwen, and many fine-tunes) works out of the box. Other templates need a
 `ChatFormat` with the strings that start a user turn and end an assistant turn.
+
+### Choosing a model
+
+Two constraints decide whether a checkpoint works as-is:
+
+- **Option labels must be single tokens.** Options are addressed by the letters A to Z, so a question can have
+  at most 26 options, and each letter must be exactly one token for the model's tokenizer. Tested: Qwen2.5
+  (0.5B, used by the test suite), Qwen3.5-4B and Qwen3.6-27B. If a letter splits into several tokens, the
+  library raises a `ValueError` when you run a decision, not when you load the model:
+  `label 'A' is not a single token for this tokenizer`. That means the tokenizer will not work without a
+  different labelling scheme.
+- **The chat template must be ChatML** (`<|im_start|>user`, `<|im_end|>`) unless you pass a `ChatFormat`.
+  Llama-style templates need their own turn-start and separator strings; nothing else in the pipeline is
+  model-specific.
+
+Pin `transformers` in production. Reading positions are computed from the tokenizer's chat template, so a
+change in `apply_chat_template` output between releases would either raise (`could not find the user turn
+start`) or shift the readout positions. The test suite checks both (`tests/test_prompting.py`).
 
 ## What this is not
 
