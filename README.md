@@ -1,6 +1,6 @@
 # Open Alternative to Jev
 
-[![Live demo on Hugging Face Spaces](https://img.shields.io/badge/%F0%9F%A4%97%20Live%20demo-Hugging%20Face%20Space-blue)](https://huggingface.co/spaces/IkerMoel/open-alternative-jev) [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-green)](LICENSE)
+[![Live demo on Hugging Face Spaces](https://img.shields.io/badge/%F0%9F%A4%97%20Live%20demo-Hugging%20Face%20Space-blue)](https://huggingface.co/spaces/IkerMoel/open-alternative-jev) [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-green)](LICENSE) [![tests](https://github.com/ikermoel/open-alternative-jev/actions/workflows/ci.yml/badge.svg)](https://github.com/ikermoel/open-alternative-jev/actions/workflows/ci.yml)
 
 **Open-source System One models: typed, calibrated decisions from any open-weights LLM, in one forward pass.**
 An open alternative to the idea behind TypeSafe's Jev, running on your own GPU with models you already have.
@@ -224,6 +224,21 @@ start`) or shift the readout positions. The test suite checks both (`tests/test_
 pip install -e ".[dev]"
 pytest                                   # CPU, Qwen2.5-0.5B, ~10 s after the first download
 ```
+
+The same suite runs in CI on every push and pull request, on Python 3.10 and 3.13, against the versions
+pinned in `ci/constraints.txt` — and again every Monday against whatever `pip` resolves that day
+(`.github/workflows/upstream.yml`), because `so1/prompting.py` builds the ChatML prompt by hand and reads
+each answer at a position it computes itself, so a change in `apply_chat_template` or in tokenizer
+behaviour is a correctness change here. To reproduce a CI run locally:
+
+```bash
+pip install --extra-index-url https://download.pytorch.org/whl/cpu -c ci/constraints.txt -e ".[dev]"
+SO1_TEST_REVISION=7ae557604adf67be50417f59c2c2f167def9a775 SO1_TEST_REQUIRE_MODEL=1 pytest -q
+```
+
+`SO1_TEST_MODEL` and `SO1_TEST_REVISION` pick the model the tests load; `SO1_TEST_REQUIRE_MODEL=1` turns
+"model could not be loaded" from a skip into a failure, which is what you want on a runner and not what you
+want on a laptop with no network.
 
 **1. Rebuild the datasets** (network needed; pinned dataset revisions, fixed seeds):
 
