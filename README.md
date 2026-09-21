@@ -222,15 +222,52 @@ start`) or shift the readout positions. The test suite checks both (`tests/test_
 
 ```bash
 pip install -e ".[dev]"
-pytest                                            # CPU, Qwen2.5-0.5B, ~10 s after download
-python benchmarks/scripts/make_figures.py         # regenerate the figures from benchmarks/results
-python benchmarks/scripts/prepare_v2.py           # rebuild the MMLU and RACE-H samples (pinned revisions)
-python benchmarks/scripts/benchmark_v2.py --data race1000.jsonl --group-size 4 --modes A,B4,C4,C4_rot --out results/race
-python benchmarks/scripts/library_compare.py --model Qwen/Qwen3.5-4B --backends hf,vllm --out results/lib
+pytest                                   # CPU, Qwen2.5-0.5B, ~10 s after the first download
 ```
+
+**1. Rebuild the datasets** (network needed; pinned dataset revisions, fixed seeds):
+
+```bash
+python benchmarks/scripts/prepare_v2.py
+```
+
+This writes `benchmarks/data/mmlu1200.jsonl` (committed) and `benchmarks/data/race1000.jsonl` (not committed:
+RACE is distributed for research use, so every user rebuilds it; the sample is deterministic and the manifest
+records the revision). 250 RACE-H test passages with exactly 4 questions each.
+
+**2. A small RACE-H run on any machine**, to see the pipeline work end to end (8 passages, CPU, ~1 min):
+
+```bash
+python benchmarks/scripts/benchmark_v2.py --data race1000.jsonl --group-size 4 --modes A,B4,C4,C4_rot \
+    --count 32 --model Qwen/Qwen2.5-0.5B-Instruct --no-quant --device cpu --out benchmarks/results/race_small
+python benchmarks/scripts/analyze_run.py benchmarks/results/race_small
+```
+
+`--count` must be a multiple of the group size. `--model` accepts a Hub id or a local path; without it the script
+reads `benchmarks/data/model_path.txt`.
+
+**3. The run in the tables** (Qwen3.6-27B, 8-bit, needs a CUDA GPU with ~30 GB and `pip install ".[quant]"`):
+
+```bash
+python benchmarks/scripts/benchmark_v2.py --data race1000.jsonl --group-size 4 --modes A,B4,C4,C4_rot \
+    --model Qwen/Qwen3.6-27B --out benchmarks/results/race
+python benchmarks/scripts/benchmark_v2.py --data mmlu1200.jsonl --group-size 12 --modes A,A_pad,B3,C3,C3_rot,C6,C12 \
+    --model Qwen/Qwen3.6-27B --out benchmarks/results/mmlu
+python benchmarks/scripts/analyze_run.py benchmarks/results/race
+```
+
+**4. The library on both backends** (Qwen3.5-4B, GPU; drop `vllm` from `--backends` without a GPU):
+
+```bash
+python benchmarks/scripts/library_compare.py --model Qwen/Qwen3.5-4B --passages 100 --backends hf,vllm \
+    --out benchmarks/results/lib
+```
+
+**5. Figures:** `python benchmarks/scripts/make_figures.py` regenerates `benchmarks/figures/` from `benchmarks/results/`.
 
 `benchmarks/docs/RESULTS.md` is the full write-up: the question, the first result, why it was wrong, the corrected
 experiments, interference, the small-model finding and calibration. Spanish original in `RESULTS.es.md`.
+The `.sbatch` files are the Slurm scripts we used; they contain cluster-specific paths.
 
 ## Keywords
 
