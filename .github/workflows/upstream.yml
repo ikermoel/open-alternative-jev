@@ -1,0 +1,52 @@
+name: tests (latest deps)
+
+# The same suite with nothing pinned. transformers can change
+# apply_chat_template output or tokenizer behaviour in a minor release, and
+# so1/prompting.py depends on both: the loud failure is "could not find the
+# user turn start in the chat prompt", the quiet one is a reading position
+# that has moved. This job is here to find either one on a Monday rather
+# than in an issue.
+
+on:
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+env:
+  SO1_TEST_MODEL: Qwen/Qwen2.5-0.5B-Instruct
+  SO1_TEST_REVISION: 7ae557604adf67be50417f59c2c2f167def9a775
+  SO1_TEST_REQUIRE_MODEL: "1"   # a run that skipped every model test is not a pass
+  HF_HUB_DISABLE_TELEMETRY: "1"
+
+jobs:
+  latest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+
+      - name: Cache the test model
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: hf-${{ env.SO1_TEST_MODEL }}-${{ env.SO1_TEST_REVISION }}
+
+      - name: Install (CPU torch, unpinned)
+        run: |
+          python -m pip install --upgrade pip
+          pip install --extra-index-url https://download.pytorch.org/whl/cpu -e ".[dev]"
+
+      - name: Versions under test
+        run: |
+          python - <<'PY'
+          import accelerate, torch, transformers
+          print("torch", torch.__version__)
+          print("transformers", transformers.__version__)
+          print("accelerate", accelerate.__version__)
+          PY
+
+      - run: python -m pytest -q

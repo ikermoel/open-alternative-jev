@@ -1,0 +1,12 @@
+# Pinned versions for CI. The library reads answers out of a chat template it
+# builds by hand (so1/prompting.py), so tokenizer and template behaviour is
+# part of its correctness, not an implementation detail of a dependency. CI
+# runs against these pins; .github/workflows/upstream.yml runs the same suite
+# against whatever pip resolves today, so a breaking release shows up as one
+# failing scheduled run rather than as a user's bug report.
+#
+# To refresh: bump here, run the suite locally, commit the pins that passed.
+torch==2.14.0+cpu
+transformers==5.17.0
+accelerate==1.15.0
+pytest==9.1.1
