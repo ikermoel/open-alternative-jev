@@ -1,0 +1,12 @@
+{
+  "model": "/projects/ikmo5391/hf/hub/models--convaiinnovations--laya/snapshots/1c5edc17a7acd8701df6fc341c0d179f1c62c982",
+  "passages": 250,
+  "questions": 1000,
+  "max_len": 512,
+  "passages_over_context": 10,
+  "accuracy": 0.446,
+  "ece_10_bins": 0.04646169999999999,
+  "mean_confidence": 0.4639107,
+  "ms_per_passage_p50": 71.94534799782559,
+  "questions_per_second": 56.40178322122062
+}

@@ -163,9 +163,11 @@ uses constrained one-token generation with `allowed_token_ids` and the engine's 
 
 Two things the 27B runs did not show.
 
-**Packing costs the 4B model 2.8 points** (11 of 400 answers) where the 27B lost nothing. Interference is
-the same mechanism, but a smaller model is less able to keep four questions apart. This is the most useful
-caveat in the project: the "accuracy holds" result is a property of the model size, not of the method.
+**Packing costs the 4B model 2.8 points** (11 of 400 answers) on this 100-passage subset, where the 27B lost
+nothing. On all 250 passages (section 9) the 4B loses nothing either, while 0.6B to 2B models lose 2 to 8
+points, so the 4B sits on the boundary. Interference is the same mechanism at every size; a smaller model is
+less able to keep four questions apart. The "accuracy holds" result is a property of the model size, not of
+the method.
 
 **On vLLM, `separate` is the fastest mode**, 1.9x faster than packed, with no accuracy cost. The prefix
 cache already encodes the shared passage once, which is the saving packing was designed to capture, and
@@ -260,6 +262,38 @@ What it says:
   0.074 and KL 0.27 to 0.15 but raises hard-label ECE from 0.020 to 0.135: matching a soft teacher
   distribution and being calibrated on the argmax are different objectives. Both sets of numbers are in
   `results/`.
+
+## 9. RACE-H by model size, and Laya on reading comprehension
+
+The same 250 passages x 4 questions and the same four modes, for every stock Qwen we could fit on a 35 GB
+slice, plus Laya's two checkpoints answering the four questions of a passage in one call (`results/race_*`).
+
+| Model | A | B4 | C4 (packed) | C4 - A | Answers changed by packing | Order change | ECE (C4) | Questions / s (C4) |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| Qwen3-0.6B | 50.0 % | 49.8 % | 42.5 % | -7.5 | 36.9 % | 37.9 % | 0.32 | 134 |
+| Qwen3-1.7B | 69.9 % | 70.4 % | 68.0 % | -1.9 | 20.0 % | 18.8 % | 0.29 | 100 |
+| Qwen3.5-2B | 77.0 % | 77.0 % | 75.2 % | -1.8 | 13.9 % | 12.9 % | 0.03 | 53 |
+| Qwen3.5-4B | 84.8 % | 84.8 % | 85.0 % | +0.2 | 7.6 % | 7.6 % | 0.04 | 27 |
+| Qwen3.6-27B, 8-bit | 92.6 % | 92.8 % | 92.9 % | +0.3 | 3.9 % | 2.4 % | 0.01 | 4.6 |
+| Laya base (421M, own packed call) | | | 44.6 % | | | | 0.05 | 56 |
+| Laya fine-tuned on typed-decisions | | | 45.9 % | | | | 0.08 | 57 |
+
+This is the cleanest statement of the interference result. The fraction of answers that move when a question
+is packed with its neighbours falls monotonically with size, from 37 % at 0.6B to 3.9 % at 27B, and so does
+the accuracy cost: 7.5 points at 0.6B, about 2 points at 1.7B and 2B, none at 4B and 27B. The 4B is the
+boundary: on a 100-passage subset (section 6) it had lost 2.8 points, on all 250 passages it loses none, and its
+7.6 % of moved answers is still twice the 27B's. Batching (B4) never costs anything, as before.
+
+The Qwen3 generation (0.6B, 1.7B) is also badly over-confident on this task (ECE 0.27 to 0.33), where the
+Qwen3.5 models are within 0.05 raw. Whatever changed in post-training between the two generations matters
+more for calibration than model size does.
+
+Laya, run on RACE-H through its own choice interface, scores 44.6 % (base) and 45.9 % (the checkpoint tuned on
+typed-decisions) on four-option questions, below a stock 0.6B decoder read one question at a time. Only 10 of
+250 passages exceed its 512-token context, so truncation is not the reason; it is a decision encoder trained on
+short states, and reading comprehension over a 400-token passage is a different task. It is, however, fast (56
+questions per second, wall-clock) and reasonably calibrated here (ECE 0.046). None of this is a criticism of
+Laya on its own tasks; it is the reason a "which model" question needs a "for what" attached.
 
 ## What this does and does not establish
 

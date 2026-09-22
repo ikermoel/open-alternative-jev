@@ -1,0 +1,164 @@
+{
+  "A": {
+    "n": 1000,
+    "accuracy": 0.699,
+    "ece_10_bins": 0.2746054208874702,
+    "nll": 3.7233085784013507,
+    "brier": 0.5655195131264064,
+    "accuracy_by_position": {
+      "0": 0.699
+    },
+    "calls": 1000,
+    "forward_seconds": 30.730695713311434,
+    "questions_per_second": 32.54075369230368,
+    "real_tokens": 459021,
+    "padded_tokens": 459021,
+    "peak_allocated_gib": 3.290621757507324,
+    "peak_reserved_gib": 3.9921875
+  },
+  "B4": {
+    "n": 1000,
+    "accuracy": 0.704,
+    "ece_10_bins": 0.2681172192692757,
+    "nll": 3.717460633650832,
+    "brier": 0.5611655977236536,
+    "accuracy_by_position": {
+      "0": 0.692,
+      "1": 0.684,
+      "2": 0.696,
+      "3": 0.744
+    },
+    "calls": 250,
+    "forward_seconds": 24.881618615356274,
+    "questions_per_second": 40.190311388457125,
+    "real_tokens": 459021,
+    "padded_tokens": 471984,
+    "peak_allocated_gib": 3.455533981323242,
+    "peak_reserved_gib": 3.9921875,
+    "vs_A": {
+      "n": 1000,
+      "accuracy_delta": 0.005,
+      "cluster_bootstrap_95_ci": [
+        0,
+        0.01
+      ],
+      "answer_disagreement": 0.014,
+      "flips_by_position": {
+        "0": "6/250",
+        "1": "5/250",
+        "2": "1/250",
+        "3": "2/250"
+      },
+      "mean_abs_probability_difference": 0.006291980253447433,
+      "max_probability_difference": 0.5486018359661102
+    }
+  },
+  "C4": {
+    "n": 1000,
+    "accuracy": 0.68,
+    "ece_10_bins": 0.2921441992521286,
+    "nll": 3.6278922965475773,
+    "brier": 0.6000256993151577,
+    "accuracy_by_position": {
+      "0": 0.676,
+      "1": 0.668,
+      "2": 0.652,
+      "3": 0.724
+    },
+    "calls": 250,
+    "forward_seconds": 9.98139299172908,
+    "questions_per_second": 100.18641694888017,
+    "real_tokens": 182157,
+    "padded_tokens": 182157,
+    "peak_allocated_gib": 3.3047385215759277,
+    "peak_reserved_gib": 3.9921875,
+    "vs_A": {
+      "n": 1000,
+      "accuracy_delta": -0.019,
+      "cluster_bootstrap_95_ci": [
+        -0.042,
+        0.004
+      ],
+      "answer_disagreement": 0.2,
+      "flips_by_position": {
+        "0": "0/250",
+        "1": "68/250",
+        "2": "69/250",
+        "3": "63/250"
+      },
+      "mean_abs_probability_difference": 0.10031961356947026,
+      "max_probability_difference": 0.9999999999891841
+    },
+    "vs_B4": {
+      "n": 1000,
+      "accuracy_delta": -0.024,
+      "cluster_bootstrap_95_ci": [
+        -0.047,
+        -0.001
+      ],
+      "answer_disagreement": 0.205,
+      "flips_by_position": {
+        "0": "6/250",
+        "1": "66/250",
+        "2": "70/250",
+        "3": "63/250"
+      },
+      "mean_abs_probability_difference": 0.102452286971593,
+      "max_probability_difference": 0.9999999999842629
+    }
+  },
+  "C4_rot": {
+    "n": 1000,
+    "accuracy": 0.681,
+    "ece_10_bins": 0.2922169370949269,
+    "nll": 3.573096053875995,
+    "brier": 0.5950598660589455,
+    "accuracy_by_position": {
+      "0": 0.68,
+      "1": 0.648,
+      "2": 0.7,
+      "3": 0.696
+    },
+    "calls": 250,
+    "forward_seconds": 9.94950709643308,
+    "questions_per_second": 100.50749150764484,
+    "real_tokens": 182157,
+    "padded_tokens": 182157,
+    "peak_allocated_gib": 3.3047385215759277,
+    "peak_reserved_gib": 3.9921875,
+    "vs_A": {
+      "n": 1000,
+      "accuracy_delta": -0.018,
+      "cluster_bootstrap_95_ci": [
+        -0.041,
+        0.006
+      ],
+      "answer_disagreement": 0.188,
+      "flips_by_position": {
+        "0": "0/250",
+        "1": "67/250",
+        "2": "64/250",
+        "3": "57/250"
+      },
+      "mean_abs_probability_difference": 0.0930194640214576,
+      "max_probability_difference": 0.9999999999842629
+    },
+    "vs_C4": {
+      "n": 1000,
+      "accuracy_delta": 0.001,
+      "cluster_bootstrap_95_ci": [
+        -0.022,
+        0.023
+      ],
+      "answer_disagreement": 0.188,
+      "flips_by_position": {
+        "0": "68/250",
+        "1": "34/250",
+        "2": "29/250",
+        "3": "57/250"
+      },
+      "mean_abs_probability_difference": 0.09428725188436629,
+      "max_probability_difference": 0.9999999999891841
+    }
+  }
+}

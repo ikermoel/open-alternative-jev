@@ -60,6 +60,33 @@ most of that gap. The RACE-H gain is structural and survives any engine.
 > analysis in the write-up `benchmarks/docs/RESULTS.md` so you can check the reasoning, and we designed the
 > RACE-H run so that the baseline had almost no padding (2.8 %).
 
+### RACE-H by model size, and Laya
+
+Same 250 passages x 4 questions, same four modes, every stock Qwen we could fit (`benchmarks/results/race_*`).
+Laya answers the four questions of a passage in one call through its own `choice` type.
+
+| Model | One at a time (A) | Batch of 4 (B) | **Open Alternative to Jev** (packed, state written once) | Packed vs A | Answers changed by packing | Questions / s packed |
+|---|---:|---:|---:|---:|---:|---:|
+| Qwen3-0.6B | 50.0 % | 49.8 % | 42.5 % | -7.5 | 36.9 % | 134 |
+| Qwen3-1.7B | 69.9 % | 70.4 % | 68.0 % | -1.9 | 20.0 % | 100 |
+| Qwen3.5-2B | 77.0 % | 77.0 % | 75.2 % | -1.8 | 13.9 % | 53 |
+| Qwen3.5-4B | 84.8 % | 84.8 % | 85.0 % | +0.2 | 7.6 % | 27 |
+| Qwen3.6-27B (8-bit) | 92.6 % | 92.8 % | 92.9 % | +0.3 | 3.9 % | 4.6 |
+| Laya base, 421M (trained, not on RACE) | | | 44.6 % (own packed call) | | | 56 |
+| Laya fine-tuned on typed-decisions | | | 45.9 % (own packed call) | | | 57 |
+
+- **Interference shrinks with model size, monotonically.** The share of answers that change when a question is
+  packed with its neighbours goes 37 %, 20 %, 14 %, 7.6 %, 3.9 % from 0.6B to 27B. Below about 4B it costs
+  accuracy; at 4B and above it does not. (On a 100-passage subset the 4B had lost 2.8 points; on all 250 it loses
+  nothing. Treat the 4B as the boundary, not as safe.)
+- **Laya is not a reading-comprehension model.** 44.6 % on four-option questions where a 1.7B stock model gets
+  70 %. Only 10 of 250 passages exceeded its 512-token context, so truncation does not explain it; it is a
+  short-state decision encoder. Its calibration on this task is decent (ECE 0.046).
+- Throughput is GPU forward time per question in packed mode on one H200 MIG 2g.35gb slice (Laya: wall-clock);
+  the 27B row is from the 8-bit run in the tables above.
+
+![RACE-H: accuracy vs latency](benchmarks/figures/race_scatter.png)
+
 ### Interference: accuracy holds, individual answers move
 
 Later questions in a packed sequence can attend to earlier questions and to the placeholders between them.
@@ -103,8 +130,9 @@ H200 MIG 3g.71gb slice. Wall-clock time per question including tokenization, fro
 
 Three things this table says that the 27B tables do not:
 
-- **Small models pay for packing.** On the 4B model, packing costs 2.8 points (11 of 400 answers), where the
-  27B lost nothing. Interference grows as the model shrinks. With small models and accuracy at stake, use
+- **Small models pay for packing.** On this 100-passage subset the 4B lost 2.8 points to packing (11 of 400
+  answers); on all 250 passages it lost nothing (see the RACE-H by model size table), while 0.6B to 2B models
+  lose 2 to 8 points. Interference grows as the model shrinks. Below 4B, or with accuracy at stake, use
   `mode="separate"`.
 - **On vLLM, `separate` is the fastest mode.** Prefix caching already computes the shared passage once, and
   constrained one-token generation is cheaper than extracting top-k `prompt_logprobs` at every position.

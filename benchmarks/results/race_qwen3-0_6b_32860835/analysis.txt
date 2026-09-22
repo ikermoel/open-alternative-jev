@@ -1,0 +1,23 @@
+TIME VS TOKENS
+  A          calls=1000 fixed=0.014s  0.02 ms/token  r=0.113  padding_waste=0.0%
+  B4         calls= 250 fixed=0.032s  0.02 ms/token  r=0.169  padding_waste=2.7%
+  C4         calls= 250 fixed=0.012s  0.03 ms/token  r=0.139  padding_waste=0.0%
+  C4_rot     calls= 250 fixed=0.034s  -0.01 ms/token  r=-0.020  padding_waste=0.0%
+FLIPS VS A BY POSITION
+  B4         pos=0 n= 250 acc=0.508 flips=  7 mean|dp|=0.0110 max|dp|=0.166
+  B4         pos=1 n= 250 acc=0.432 flips=  3 mean|dp|=0.0110 max|dp|=0.112
+  B4         pos=2 n= 250 acc=0.520 flips=  4 mean|dp|=0.0125 max|dp|=0.115
+  B4         pos=3 n= 250 acc=0.532 flips=  5 mean|dp|=0.0099 max|dp|=0.090
+  C4         pos=0 n= 250 acc=0.504 flips=  0 mean|dp|=0.0000 max|dp|=0.000
+  C4         pos=1 n= 250 acc=0.428 flips=108 mean|dp|=0.1770 max|dp|=0.989
+  C4         pos=2 n= 250 acc=0.344 flips=133 mean|dp|=0.2176 max|dp|=0.990
+  C4         pos=3 n= 250 acc=0.424 flips=128 mean|dp|=0.2171 max|dp|=0.989
+  C4_rot     pos=0 n= 250 acc=0.440 flips=  0 mean|dp|=0.0000 max|dp|=0.000
+  C4_rot     pos=1 n= 250 acc=0.436 flips=104 mean|dp|=0.1759 max|dp|=0.950
+  C4_rot     pos=2 n= 250 acc=0.384 flips=139 mean|dp|=0.2274 max|dp|=0.969
+  C4_rot     pos=3 n= 250 acc=0.356 flips=117 mean|dp|=0.2017 max|dp|=0.993
+TEMPERATURE SCALING (2-fold cross-fitted)
+  A          T=[3.6, 3.35]  ECE 0.2655 -> 0.0848  NLL 1.6930 -> 1.1657  conf 0.765 -> 0.483  acc=0.500
+  B4         T=[3.65, 3.45]  ECE 0.2745 -> 0.0774  NLL 1.7211 -> 1.1713  conf 0.769 -> 0.480  acc=0.498
+  C4         T=[4.0, 4.0]  ECE 0.3221 -> 0.0680  NLL 2.1385 -> 1.2859  conf 0.747 -> 0.446  acc=0.425
+  C4_rot     T=[4.0, 4.0]  ECE 0.3323 -> 0.0712  NLL 2.2244 -> 1.3186  conf 0.736 -> 0.439  acc=0.404

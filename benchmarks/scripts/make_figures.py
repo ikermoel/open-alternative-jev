@@ -222,12 +222,12 @@ for label, prefix, color in [("Qwen3-0.6B", "race_qwen3-0_6b_", GRAY), ("Qwen3-1
             s = json.loads(f.read_text())["C4"]
             race_points.append((label, 1000 / s["questions_per_second"], 100 * s["accuracy"], color, 8, 0))
             break
-for label, prefix in [("Laya base", "race_laya_base_"), ("Laya fine-tuned (typed-decisions ckpt)", "race_laya_ft_")]:
+for label, prefix, dy in [("Laya base", "race_laya_base_", -11), ("Laya fine-tuned (typed-decisions ckpt)", "race_laya_ft_", 11)]:
     for d in sorted(glob.glob(str(ROOT / f"results/{prefix}*"))):
         f = Path(d) / "summary.json"
         if f.exists():
             s = json.loads(f.read_text())
-            race_points.append((label, s["ms_per_passage_p50"] / 4, 100 * s["accuracy"], ORANGE, 8, 0))
+            race_points.append((label, s["ms_per_passage_p50"] / 4, 100 * s["accuracy"], ORANGE, 8, dy))
             break
 if len(race_points) > 1:
     scatter(race_points, "RACE-H: accuracy vs latency per question (packed, 4 per passage)", "race_scatter.png",
