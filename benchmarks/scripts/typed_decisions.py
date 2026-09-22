@@ -77,16 +77,21 @@ def decision_to_answer(qdef, keys, probs):
 
 
 class So1Runner:
-    def __init__(self, model, mode, load_8bit, device, dtype, temperature=1.0):
+    def __init__(self, model, mode, load_8bit, device, dtype, temperature=1.0, engine="hf", gpu_util=0.8):
         import torch
         from so1 import Decider
-        kw = {}
-        if load_8bit:
-            kw["load_in_8bit"] = True
+        if engine == "vllm":
+            self.decider = Decider.from_pretrained(model, backend="vllm", temperature=temperature, mode=mode,
+                                                   gpu_memory_utilization=gpu_util, max_model_len=8192, max_num_seqs=64,
+                                                   enable_prefix_caching=True)
         else:
-            kw["dtype"] = getattr(torch, dtype)
-            kw["device_map"] = device if device != "cpu" else None
-        self.decider = Decider.from_pretrained(model, backend="hf", temperature=temperature, mode=mode, **kw)
+            kw = {}
+            if load_8bit:
+                kw["load_in_8bit"] = True
+            else:
+                kw["dtype"] = getattr(torch, dtype)
+                kw["device_map"] = device if device != "cpu" else None
+            self.decider = Decider.from_pretrained(model, backend="hf", temperature=temperature, mode=mode, **kw)
         self.mode = mode
 
     def predict(self, state, questions):
@@ -187,6 +192,8 @@ def main():
     ap.add_argument("--model", required=True)
     ap.add_argument("--mode", choices=["packed", "separate"], default="packed")
     ap.add_argument("--load-8bit", action="store_true")
+    ap.add_argument("--engine", choices=["hf", "vllm"], default="hf", help="so1 backend engine")
+    ap.add_argument("--gpu-util", type=float, default=0.8, help="vLLM gpu_memory_utilization")
     ap.add_argument("--device", default="cuda")
     ap.add_argument("--dtype", default="bfloat16")
     ap.add_argument("--calibrate", type=int, default=0, help="so1: fit a temperature on this many train cases (0 = raw)")
@@ -203,7 +210,7 @@ def main():
 
     temperature = 1.0
     if args.backend == "so1":
-        runner = So1Runner(args.model, args.mode, args.load_8bit, args.device, args.dtype)
+        runner = So1Runner(args.model, args.mode, args.load_8bit, args.device, args.dtype, engine=args.engine, gpu_util=args.gpu_util)
         if args.calibrate:
             train = load_split("train", args.data_dir)
             per_wf = args.calibrate // 4
@@ -227,7 +234,7 @@ def main():
             if (i + 1) % 50 == 0:
                 print(f"PROGRESS {i + 1}/{len(test)}", flush=True)
 
-    summary = dict(backend=args.backend, model=args.model, mode=args.mode if args.backend == "so1" else None,
+    summary = dict(backend=args.backend, engine=args.engine if args.backend == "so1" else None, model=args.model, mode=args.mode if args.backend == "so1" else None,
                    load_8bit=args.load_8bit, temperature=temperature, cases=len(records),
                    ms_per_case_p50=statistics.median(latencies), ms_per_case_mean=statistics.mean(latencies),
                    overall=score(records),
