@@ -117,17 +117,17 @@ below is scored with the same code as the third-party [Luni/laya-jev-benchmark](
 table; we verified the scorer by running Laya ourselves and reproducing its published numbers exactly
 (base 0.360 / ECE 0.176, fine-tuned 0.766 / ECE 0.213). Zero-shot, no training, `benchmarks/scripts/typed_decisions.py`.
 
-| Model | How | Accuracy | ECE | Brier | ms / case (5 decisions) |
-|---|---|---:|---:|---:|---:|
-| Qwen3-0.6B | stock, packed | 29.1 % | 0.534 | 0.672 | 46 |
-| Qwen3-1.7B | stock, packed | 45.9 % | 0.509 | 0.682 | 55 |
-| Qwen3.5-2B | stock, packed | 47.3 % | 0.124 | 0.269 | 85 |
-| Qwen3.5-4B | stock, packed | 59.3 % | 0.118 | 0.164 | 105 |
-| Laya base, 421M | measured here | 36.0 % | 0.176 | 0.329 | 23 |
-| Jev 1.13.0 | published by TypeSafe | 72.7 % | 0.144 | | 710 |
-| **Qwen3.6-27B (8-bit), Open Alternative to Jev** | **stock, packed, zero-shot** | **73.7 %** | **0.020** | 0.113 | 582 |
-| Teacher self-agreement ceiling | | 73.5 % | | | |
-| Laya fine-tuned on this benchmark | measured here | 76.9 % | 0.216 | 0.066 | 23 |
+| Model | Training | Source | Accuracy | ECE | Brier | ms / case (5 decisions) |
+|---|---|---|---:|---:|---:|---:|
+| Qwen3-0.6B | zero-shot | measured here | 29.1 % | 0.534 | 0.672 | 46 |
+| Qwen3-1.7B | zero-shot | measured here | 45.9 % | 0.509 | 0.682 | 55 |
+| Qwen3.5-2B | zero-shot | measured here | 47.3 % | 0.124 | 0.269 | 85 |
+| Qwen3.5-4B | zero-shot | measured here | 59.3 % | 0.118 | 0.164 | 105 |
+| Laya base, 421M | trained on its own data, not this benchmark | measured here | 36.0 % | 0.176 | 0.329 | 23 |
+| Jev 1.13.0 | proprietary, unknown | published by TypeSafe | 72.7 % | 0.144 | | 710 |
+| **Qwen3.6-27B (8-bit), Open Alternative to Jev** | **zero-shot** | **measured here** | **73.7 %** | **0.020** | 0.113 | 582 |
+| Teacher self-agreement ceiling | | | 73.5 % | | | |
+| Laya fine-tuned, 421M | fine-tuned on this benchmark's train split | measured here | 76.9 % | 0.216 | 0.066 | 23 |
 
 ![typed-decisions](benchmarks/figures/typed_decisions.png)
 
