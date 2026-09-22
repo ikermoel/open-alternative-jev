@@ -18,6 +18,8 @@ P=/projects/ikmo5391
 R=$P/so1
 export HF_HOME=$P/hf HF_HUB_OFFLINE=1 XDG_CACHE_HOME=$P/cache VLLM_CACHE_ROOT=$P/cache/vllm
 export TOKENIZERS_PARALLELISM=false PYTHONUNBUFFERED=1 PYTHONPATH=$R VLLM_USE_FLASHINFER_SAMPLER=0
+# Compute nodes have no nvcc: DeepGEMM JIT-compiles FP8 GEMMs, so disable it and let vLLM use its prebuilt FP8 kernels.
+export VLLM_USE_DEEP_GEMM=0
 cd "$R"
 nvidia-smi --query-gpu=name,memory.total --format=csv,noheader | head -1
 DATA=$(dirname "$(ls $P/hf/hub/datasets--LocalLLaMA--typed-decisions/snapshots/*/all/test-00000-of-00001.parquet | head -1)")
@@ -25,7 +27,7 @@ PY=$P/venv-vllm/bin/python
 J=$SLURM_JOB_ID
 run() { echo "=== $1"; shift; "$@" 2>&1 | grep -E "CASES|TEMPERATURE|PROGRESS 400|RESULT|Traceback|Error" | cut -c1-400; }
 
-for name in Qwen3-0.6B-FP8 Qwen3-0.6B; do
+for name in ${MODELS:-Qwen3-0.6B-FP8 Qwen3-0.6B}; do
   M=$(ls -d $P/hf/hub/models--Qwen--$name/snapshots/* | head -1)
   tag=$(echo "$name" | tr 'A-Z.' 'a-z_')
   run "$name vllm packed"   $PY benchmarks/scripts/typed_decisions.py --backend so1 --engine vllm --gpu-util 0.6 --model "$M" --mode packed   --data-dir "$DATA" --out results/td_${tag}_vllm_packed_$J
