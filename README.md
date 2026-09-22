@@ -129,6 +129,8 @@ measurement the benchmark's authors took through TypeSafe's API (`jev-latest`, r
 | Model | Training | Source | Accuracy | ECE | Brier | ms / case (5 decisions) |
 |---|---|---|---:|---:|---:|---:|
 | Qwen3-0.6B | zero-shot, Open Alternative to Jev (packed, state written once) | measured here | 29.1 % | 0.534 | 0.672 | 46 |
+| Qwen3-0.6B-FP8 (vLLM) | zero-shot, Open Alternative to Jev (packed, state written once) | measured here | 30.7 % | 0.530 | 0.681 | 77 |
+| Qwen3-0.6B (BF16, vLLM) | zero-shot, Open Alternative to Jev (packed, state written once) | measured here | 29.1 % | 0.536 | 0.677 | 71 |
 | Qwen3-1.7B | zero-shot, Open Alternative to Jev (packed, state written once) | measured here | 45.9 % | 0.509 | 0.682 | 55 |
 | Qwen3.5-2B | zero-shot, Open Alternative to Jev (packed, state written once) | measured here | 47.3 % | 0.124 | 0.269 | 85 |
 | Qwen3.5-4B | zero-shot, Open Alternative to Jev (packed, state written once) | measured here | 59.3 % | 0.118 | 0.164 | 105 |
@@ -160,6 +162,9 @@ measurement the benchmark's authors took through TypeSafe's API (`jev-latest`, r
   opposite holds and accuracy collapses either way: this is a 4B-and-up method.
 - **Laya is a 421M encoder and is 25x faster per case** than the 27B; that is the trade the small trained
   models make.
+- **FP8 changes nothing at this size.** Qwen3-0.6B in FP8 and in BF16 through the same vLLM engine land within
+  a point of each other (30.7 % vs 29.1 % packed, 38.5 % vs 38.8 % separate). The bottleneck is the model, not
+  the precision.
 - Temperature scaling fitted on 200 train cases to the teacher's soft distributions improves Brier and KL
   (27B: 0.113 to 0.074) but raises hard-label ECE (0.020 to 0.135), so the calibrated rows are in
   `benchmarks/results/td_*_cal_*` rather than in this table.

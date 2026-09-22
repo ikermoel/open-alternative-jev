@@ -217,6 +217,8 @@ models went through the same code, zero-shot (`results/td_*`).
 | Model | Accuracy | ECE | Brier | KL to gold | ms / case |
 |---|---:|---:|---:|---:|---:|
 | Qwen3-0.6B, packed | 29.1 % | 0.534 | 0.672 | 2.25 | 46 |
+| Qwen3-0.6B-FP8, packed (vLLM) | 30.7 % | 0.530 | 0.681 | 2.28 | 77 |
+| Qwen3-0.6B BF16, packed (vLLM) | 29.1 % | 0.536 | 0.677 | 2.26 | 71 |
 | Qwen3-1.7B, packed | 45.9 % | 0.509 | 0.682 | 4.25 | 55 |
 | Qwen3.5-2B, packed | 47.3 % | 0.124 | 0.269 | 0.50 | 85 |
 | Qwen3.5-4B, packed | 59.3 % | 0.118 | 0.164 | 0.38 | 105 |
@@ -245,7 +247,10 @@ What it says:
 - Packing helps on this benchmark for every model of 2B and up (27B +1.0 point, 4B +3.3 points, 2B is the
   exception at -2.9), the opposite of the RACE-H result on the 4B. Five questions about the same JSON state
   are related, and seeing the others appears to help; interference is not always a cost.
-- Below 4B, zero-shot decisions collapse and confidence stays high (Qwen3-1.7B: 45.9 % at ECE 0.51). Laya
+- Below 4B, zero-shot decisions collapse and confidence stays high (Qwen3-1.7B: 45.9 % at ECE 0.51). FP8
+  weights do not move the needle: Qwen3-0.6B in FP8 and BF16 through the same vLLM engine differ by a point.
+  (Transformers could not load the FP8 checkpoint on the cluster, whose compute nodes have no nvcc for its JIT
+  kernels; vLLM ran it with DeepGEMM disabled.) Laya
   base, which has never seen the task, scores 36 %. Small models need training for this; large ones do not.
 - Latencies are wall-clock per case on one H200 MIG slice. Laya is a 421M encoder and is 25x faster than
   the 27B; the 27B here runs 8-bit with fallback kernels for its linear-attention layers, so its absolute
