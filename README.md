@@ -6,6 +6,11 @@
 An open alternative to the idea behind TypeSafe's Jev, running on your own GPU with models you already have.
 Python package `open-alternative-jev`, import name `so1` ("System One").
 Also known as: open Jev, Jev alternative, open-source System One model.
+
+> **Beats Jev's published score on the community benchmark, with no training.** On `LocalLLaMA/typed-decisions`
+> (400 cases, 2,000 typed decisions), a stock Qwen3.6-27B through this library scores **73.7 % accuracy at ECE 0.020**,
+> against TypeSafe's published **72.7 % at ECE 0.144** for Jev 1.13.0: higher accuracy and 7x better calibration, zero-shot.
+> Measured with the same third-party scorer that reproduces Laya's published numbers exactly. [Details and caveats below.](#against-jev-and-laya-on-a-shared-benchmark)
 This replaces the library, not the endpoint: it is a Python package you call in-process, and there is no HTTP server
 or drop-in API for the official Jev SDK.
 
