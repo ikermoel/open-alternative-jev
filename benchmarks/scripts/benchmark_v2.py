@@ -215,7 +215,13 @@ def main():
 
     if args.no_quant:
         from transformers import AutoModelForCausalLM
-        model = AutoModelForCausalLM.from_pretrained(model_path, local_files_only=True, dtype=torch.float32).to(args.device).eval()
+        dtype = torch.bfloat16 if use_cuda else torch.float32
+        try:
+            model = AutoModelForCausalLM.from_pretrained(model_path, local_files_only=True, dtype=dtype)
+        except (ValueError, KeyError):  # multimodal checkpoints such as Qwen3.5
+            from transformers import AutoModelForImageTextToText
+            model = AutoModelForImageTextToText.from_pretrained(model_path, local_files_only=True, dtype=dtype)
+        model = model.to(args.device).eval()
     else:
         from transformers import BitsAndBytesConfig, Qwen3_5ForConditionalGeneration
         model = Qwen3_5ForConditionalGeneration.from_pretrained(
