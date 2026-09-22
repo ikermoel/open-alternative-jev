@@ -222,7 +222,7 @@ models went through the same code, zero-shot (`results/td_*`).
 | Qwen3.5-4B, packed | 59.3 % | 0.118 | 0.164 | 0.38 | 105 |
 | Qwen3.5-4B, separate | 56.0 % | 0.215 | 0.262 | 0.55 | 229 |
 | Laya base (measured) | 36.0 % | 0.176 | 0.329 | 0.55 | 23 |
-| Jev 1.13.0 (published) | 72.7 % | 0.144 | | | 710 |
+| Jev 1.13.0 (measured by the benchmark authors via TypeSafe's API, 2026-09-18) | 72.7 % | 0.144 | 0.148 | 1.44 | 710 |
 | Qwen3.6-27B 8-bit, separate | 72.7 % | 0.063 | 0.120 | 0.36 | 1234 |
 | **Qwen3.6-27B 8-bit, packed** | **73.7 %** | **0.020** | 0.113 | 0.27 | 582 |
 | Teacher self-agreement | 73.5 % | | | | |
@@ -230,10 +230,16 @@ models went through the same code, zero-shot (`results/td_*`).
 
 What it says:
 
-- A stock 27B with nothing trained lands on the teacher ceiling and one point above the published Jev row.
+- A stock 27B with nothing trained lands on the teacher ceiling and one point above the Jev row. That row is
+  not a TypeSafe publication: the benchmark's authors ran all 400 cases through TypeSafe's API on 2026-09-18
+  (`jev-latest`, reporting itself as 1.13.0; p50 710 ms per case, $0.016 in total). On the distribution
+  metrics the card asks readers to prefer over ECE, the gap is large: KL to gold 0.27 against Jev's 1.44,
+  Brier 0.113 against 0.148. Jev commits hard to the right label; the stock 27B reproduces the teacher's
+  spread.
   Per workflow it is 65.0 % on agent-trace observability (the hardest, teacher ceiling 0.56 on its urgency
   question), 77.6 % customer service, 77.4 % invoice processing, 74.6 % security incidents.
-- Its ECE of 0.020 is the lowest in the table by a wide margin. Fine-tuned Laya gets the highest accuracy,
+- Its ECE of 0.020 is the lowest in the table by a wide margin, with the caveat from the card that a base-rate
+  prior which reads nothing scores ECE 0.088. Fine-tuned Laya gets the highest accuracy,
   above the ceiling, by fitting the teacher's distribution (best Brier and KL) while its argmax confidence is
   badly calibrated. Those are two different things to be good at, and the benchmark card asks for both.
 - Packing helps on this benchmark for every model of 2B and up (27B +1.0 point, 4B +3.3 points, 2B is the
@@ -243,8 +249,8 @@ What it says:
   base, which has never seen the task, scores 36 %. Small models need training for this; large ones do not.
 - Latencies are wall-clock per case on one H200 MIG slice. Laya is a 421M encoder and is 25x faster than
   the 27B; the 27B here runs 8-bit with fallback kernels for its linear-attention layers, so its absolute
-  time is far from what a served deployment would see. Jev's 710 ms is a published figure on TypeSafe's
-  infrastructure.
+  time is far from what a served deployment would see. Jev's 710 ms is the API round-trip the benchmark
+  authors measured, network included. The two are the same order of magnitude and not a controlled race.
 - Temperature fitted on 200 train cases against the soft gold (T = 2.0 for the 27B) improves Brier 0.113 to
   0.074 and KL 0.27 to 0.15 but raises hard-label ECE from 0.020 to 0.135: matching a soft teacher
   distribution and being calibrated on the argmax are different objectives. Both sets of numbers are in
@@ -260,8 +266,8 @@ What it says:
 - Individual answers depend on their neighbours in 6 to 9 % of cases, three times the numerical noise
   floor, without moving accuracy.
 - Raw probabilities are over-confident by about 5 points and one cross-validated scalar fixes most of it.
-- On the community benchmark for this task, a stock 27B zero-shot matches the published Jev accuracy with
-  far better calibration; a small model fine-tuned on the benchmark scores higher but past the point where
+- On the community benchmark for this task, a stock 27B zero-shot matches Jev's measured accuracy with
+  probabilities far closer to the gold distribution; a small model fine-tuned on the benchmark scores higher but past the point where
   the benchmark's authors say the score means anything.
 - Not measured: a generation-with-reasoning baseline (the comparison TypeSafe's charts make), other model
   families, BF16 versus int8 for the same checkpoint, and anything about how Jev itself works. The pilot

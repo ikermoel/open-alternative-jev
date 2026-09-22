@@ -152,7 +152,7 @@ for label, key, color in entries:
     s = pick(key)
     if s:
         labels.append(label); acc.append(100 * s["overall"]["acc"]); ece.append(100 * s["overall"]["ece"]); colors.append(color)
-labels.append("Jev 1.13.0\n(published)"); acc.append(72.7); ece.append(14.4); colors.append(INK2)
+labels.append("Jev 1.13.0\n(via API, by the\nbenchmark authors)"); acc.append(72.7); ece.append(14.4); colors.append(INK2)
 fig, axes = plt.subplots(1, 2, figsize=(12.5, 4.2))
 x = range(len(labels))
 for ax, vals, title, fmt in [(axes[0], acc, "Accuracy vs teacher gold, %", "{:.1f}"), (axes[1], ece, "Expected calibration error, % (lower is better)", "{:.1f}")]:
@@ -167,7 +167,7 @@ axes[0].axhline(73.5, color=INK2, linestyle="--", linewidth=1.2)
 axes[0].text(3.5, 88, "dashed: teacher self-agreement ceiling, 73.5 %.\nAbove it a model is learning the teacher's quirks.", fontsize=7.5, color=INK2, ha="center", va="top")
 fig.suptitle("LocalLLaMA/typed-decisions: 400 cases x 5 typed questions, one shared state each (n = 2,000)", x=0.01, ha="left", fontsize=12, fontweight="bold", color=INK)
 fig.text(0.01, -0.05, "Blue: Open Alternative to Jev on a stock model, no training. Orange: Laya, run here with the same scorer (matches its published 0.766). "
-         "Gray: smaller stock models. Jev row quoted from TypeSafe's published number; ECE from the Luni/laya-jev-benchmark table.", fontsize=7.5, color=INK2)
+         "Gray: smaller stock models. Jev row: measured by the benchmark authors through TypeSafe's API on 2026-09-18 (dataset card).", fontsize=7.5, color=INK2)
 fig.tight_layout()
 fig.savefig(OUT / "typed_decisions.png", dpi=160, bbox_inches="tight")
 plt.close(fig)
@@ -206,10 +206,10 @@ for label, key, color, dx, dy in [("Qwen3-0.6B", "td_qwen3-0_6b_packed_3", GRAY,
     s = pick(key)
     if s:
         td_points.append((label, s["ms_per_case_p50"], 100 * s["overall"]["acc"], color, dx, dy))
-td_points.append(("Jev 1.13.0 (published)", 710, 72.7, INK2, 8, -10))
+td_points.append(("Jev 1.13.0 (API, measured by benchmark authors)", 710, 72.7, INK2, 8, -10))
 scatter(td_points, "typed-decisions: accuracy vs latency per case (5 decisions)", "typed_decisions_scatter.png",
         "ms per case, p50, log scale", "Qwen and Laya measured here on one H200 MIG slice (Qwen3.6-27B in 8-bit with fallback kernels; Laya is a 421M encoder). "
-        "Jev: TypeSafe's published accuracy and latency on its own infrastructure.", (20, 85), hline=(73.5, "teacher self-agreement ceiling 73.5 %"))
+        "Jev: accuracy and p50 latency measured by the benchmark authors through TypeSafe's API (2026-09-18), so its latency includes the network round-trip.", (20, 85), hline=(73.5, "teacher self-agreement ceiling 73.5 %"))
 
 race_points = []
 race27 = race["C4"]
