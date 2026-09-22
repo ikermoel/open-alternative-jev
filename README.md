@@ -109,6 +109,46 @@ So the recommendation is simple: on Transformers, pack when questions share a st
 `separate` and let the prefix cache do the work. Either way you get typed answers with probabilities, no
 generated text, and the same calibration tools.
 
+### Against Jev and Laya on a shared benchmark
+
+`LocalLLaMA/typed-decisions` is the benchmark the community uses for this task: 400 cases, each one shared
+state plus 5 typed questions (yes/no, choice, ordered score), gold built from a teacher model. Everything
+below is scored with the same code as the third-party [Luni/laya-jev-benchmark](https://huggingface.co/datasets/Luni/laya-jev-benchmark)
+table; we verified the scorer by running Laya ourselves and reproducing its published numbers exactly
+(base 0.360 / ECE 0.176, fine-tuned 0.766 / ECE 0.213). Zero-shot, no training, `benchmarks/scripts/typed_decisions.py`.
+
+| Model | How | Accuracy | ECE | Brier | ms / case (5 decisions) |
+|---|---|---:|---:|---:|---:|
+| Qwen3-0.6B | stock, packed | 29.1 % | 0.534 | 0.672 | 46 |
+| Qwen3-1.7B | stock, packed | 45.9 % | 0.509 | 0.682 | 55 |
+| Qwen3.5-2B | stock, packed | 47.3 % | 0.124 | 0.269 | 85 |
+| Qwen3.5-4B | stock, packed | 59.3 % | 0.118 | 0.164 | 105 |
+| Laya base, 421M | measured here | 36.0 % | 0.176 | 0.329 | 23 |
+| Jev 1.13.0 | published by TypeSafe | 72.7 % | 0.144 | | 710 |
+| **Qwen3.6-27B (8-bit), Open Alternative to Jev** | **stock, packed, zero-shot** | **73.7 %** | **0.020** | 0.113 | 582 |
+| Teacher self-agreement ceiling | | 73.5 % | | | |
+| Laya fine-tuned on this benchmark | measured here | 76.9 % | 0.216 | 0.066 | 23 |
+
+![typed-decisions](benchmarks/figures/typed_decisions.png)
+
+- **A stock 27B with no training matches the published Jev number** (73.7 % vs 72.7 %) and sits on the
+  teacher self-agreement ceiling (73.5 %). The benchmark's own card says a score much above 0.75 means a
+  model has learned the teacher's quirks rather than the task.
+- **Its confidence is the best-calibrated in the table** (ECE 0.020, seven times lower than Jev's
+  published 0.144 and ten times lower than fine-tuned Laya's 0.216).
+- **Laya fine-tuned scores higher and is worse everywhere else.** It was trained on this benchmark's train
+  split, exceeds the ceiling, and its probabilities are badly calibrated. Laya base, the checkpoint that has
+  not seen the task, scores 36 %.
+- **Packing helps here.** Five questions about one state answered in one pass beat the same questions asked
+  separately on every model of 2B and up (27B: 73.7 % vs 72.7 %; 4B: 59.3 % vs 56.0 %). Below 2B the
+  opposite holds and accuracy collapses either way: this is a 4B-and-up method.
+- **Latency** is on one H200 MIG slice with Transformers and fallback kernels (see the note on the model's
+  hybrid attention); Laya is a 421M encoder and is 25x faster per case. Jev's 710 ms is its published
+  number on its own infrastructure.
+- Temperature scaling fitted on 200 train cases to the teacher's soft distributions improves Brier and KL
+  (27B: 0.113 to 0.074) but raises hard-label ECE (0.020 to 0.135), so the calibrated rows are in
+  `benchmarks/results/td_*_cal_*` rather than in this table.
+
 ## Quickstart
 
 ```python

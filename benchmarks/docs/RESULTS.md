@@ -196,6 +196,60 @@ RACE-H); we have no established explanation, and with 1000 to 1200 examples the 
 direction is clear and the magnitude is not. RACE-H packed was already near calibrated, and scaling does
 not improve it.
 
+## 8. The comparison people asked for: Jev and Laya on one benchmark
+
+After the write-up above went public, the obvious question was how this compares with Jev itself and with
+Laya, the 421M ModernBERT-based reproduction that claims to beat Jev. Laya's own headline (83.8 % vs 67.8 %)
+compares two different benchmarks, which a third party (Luni/laya-jev-benchmark) had already pointed out. The
+shared benchmark where published numbers exist is `LocalLLaMA/typed-decisions`: 400 test cases, each a JSON
+state plus five typed questions (`noul` yes/no, `choice`, ordered `score`), 2,000 decisions, gold = the mean of
+three samples from a roughly 4B-class teacher. Accuracy therefore measures agreement with that teacher; the
+card puts the majority baseline at 0.520, "perfect scenario understanding" at 0.704 and teacher
+self-agreement at 0.735, and warns that scores much above 0.75 mean a model learned the teacher's quirks.
+
+We wrote an adapter (`benchmarks/scripts/typed_decisions.py`) that renders each case as a state plus five
+so1 `Choice` questions (option descriptions included in the prompt, as the card requires), and ported the
+third-party scorer line by line. Then we ran Laya through it first. It reproduced Laya's published numbers
+exactly: base checkpoint 0.360 accuracy / 0.176 ECE (published 0.360 / 0.175), fine-tuned checkpoint 0.766
+on CPU and 0.769 on the GPU / 0.216 ECE (published 0.766 / 0.212). With the scorer validated, the stock Qwen
+models went through the same code, zero-shot (`results/td_*`).
+
+| Model | Accuracy | ECE | Brier | KL to gold | ms / case |
+|---|---:|---:|---:|---:|---:|
+| Qwen3-0.6B, packed | 29.1 % | 0.534 | 0.672 | 2.25 | 46 |
+| Qwen3-1.7B, packed | 45.9 % | 0.509 | 0.682 | 4.25 | 55 |
+| Qwen3.5-2B, packed | 47.3 % | 0.124 | 0.269 | 0.50 | 85 |
+| Qwen3.5-4B, packed | 59.3 % | 0.118 | 0.164 | 0.38 | 105 |
+| Qwen3.5-4B, separate | 56.0 % | 0.215 | 0.262 | 0.55 | 229 |
+| Laya base (measured) | 36.0 % | 0.176 | 0.329 | 0.55 | 23 |
+| Jev 1.13.0 (published) | 72.7 % | 0.144 | | | 710 |
+| Qwen3.6-27B 8-bit, separate | 72.7 % | 0.063 | 0.120 | 0.36 | 1234 |
+| **Qwen3.6-27B 8-bit, packed** | **73.7 %** | **0.020** | 0.113 | 0.27 | 582 |
+| Teacher self-agreement | 73.5 % | | | | |
+| Laya fine-tuned on this benchmark (measured) | 76.9 % | 0.216 | 0.066 | 0.12 | 23 |
+
+What it says:
+
+- A stock 27B with nothing trained lands on the teacher ceiling and one point above the published Jev row.
+  Per workflow it is 65.0 % on agent-trace observability (the hardest, teacher ceiling 0.56 on its urgency
+  question), 77.6 % customer service, 77.4 % invoice processing, 74.6 % security incidents.
+- Its ECE of 0.020 is the lowest in the table by a wide margin. Fine-tuned Laya gets the highest accuracy,
+  above the ceiling, by fitting the teacher's distribution (best Brier and KL) while its argmax confidence is
+  badly calibrated. Those are two different things to be good at, and the benchmark card asks for both.
+- Packing helps on this benchmark for every model of 2B and up (27B +1.0 point, 4B +3.3 points, 2B is the
+  exception at -2.9), the opposite of the RACE-H result on the 4B. Five questions about the same JSON state
+  are related, and seeing the others appears to help; interference is not always a cost.
+- Below 4B, zero-shot decisions collapse and confidence stays high (Qwen3-1.7B: 45.9 % at ECE 0.51). Laya
+  base, which has never seen the task, scores 36 %. Small models need training for this; large ones do not.
+- Latencies are wall-clock per case on one H200 MIG slice. Laya is a 421M encoder and is 25x faster than
+  the 27B; the 27B here runs 8-bit with fallback kernels for its linear-attention layers, so its absolute
+  time is far from what a served deployment would see. Jev's 710 ms is a published figure on TypeSafe's
+  infrastructure.
+- Temperature fitted on 200 train cases against the soft gold (T = 2.0 for the 27B) improves Brier 0.113 to
+  0.074 and KL 0.27 to 0.15 but raises hard-label ECE from 0.020 to 0.135: matching a soft teacher
+  distribution and being calibrated on the argmax are different objectives. Both sets of numbers are in
+  `results/`.
+
 ## What this does and does not establish
 
 - Reading several typed answers from one forward pass keeps aggregate accuracy on a 27B model up to 12
@@ -206,6 +260,9 @@ not improve it.
 - Individual answers depend on their neighbours in 6 to 9 % of cases, three times the numerical noise
   floor, without moving accuracy.
 - Raw probabilities are over-confident by about 5 points and one cross-validated scalar fixes most of it.
+- On the community benchmark for this task, a stock 27B zero-shot matches the published Jev accuracy with
+  far better calibration; a small model fine-tuned on the benchmark scores higher but past the point where
+  the benchmark's authors say the score means anything.
 - Not measured: a generation-with-reasoning baseline (the comparison TypeSafe's charts make), other model
   families, BF16 versus int8 for the same checkpoint, and anything about how Jev itself works. The pilot
   and the analysis that corrected it are kept in `results/mmlu_32677666/` on purpose.

@@ -127,3 +127,47 @@ fig.tight_layout()
 fig.savefig(OUT / "calibration.png", dpi=160, bbox_inches="tight")
 plt.close(fig)
 print("FIGURES_OK", sorted(p.name for p in OUT.iterdir()))
+
+# typed-decisions: accuracy and calibration of every model we ran, against the published Jev row and the ceiling.
+import glob
+td = {}
+for d in sorted(glob.glob(str(ROOT / "results/td_*"))):
+    f = Path(d) / "summary.json"
+    if f.exists():
+        td[Path(d).name] = json.loads(f.read_text())
+def pick(prefix):
+    for k, v in td.items():
+        if k.startswith(prefix):
+            return v
+    return None
+entries = [  # (label, summary key prefix, color)
+    ("Qwen3\n0.6B", "td_qwen3-0_6b_packed_3", GRAY), ("Qwen3\n1.7B", "td_qwen3-1_7b_packed_3", GRAY),
+    ("Qwen3.5\n2B", "td_qwen3_5-2b_packed_3", GRAY), ("Qwen3.5\n4B", "td_qwen4b_packed_3", GRAY),
+    ("Qwen3.6-27B\nzero-shot\n(this library)", "td_qwen27b_packed_3", BLUE),
+    ("Laya\nbase", "td_laya_base", ORANGE), ("Laya\nfine-tuned\non this bench", "td_laya_ft_3", ORANGE),
+]
+labels, acc, ece, colors = [], [], [], []
+for label, key, color in entries:
+    s = pick(key)
+    if s:
+        labels.append(label); acc.append(100 * s["overall"]["acc"]); ece.append(100 * s["overall"]["ece"]); colors.append(color)
+labels.append("Jev 1.13.0\n(published)"); acc.append(72.7); ece.append(14.4); colors.append(INK2)
+fig, axes = plt.subplots(1, 2, figsize=(12.5, 4.2))
+x = range(len(labels))
+for ax, vals, title, fmt in [(axes[0], acc, "Accuracy vs teacher gold, %", "{:.1f}"), (axes[1], ece, "Expected calibration error, % (lower is better)", "{:.1f}")]:
+    b = ax.bar(x, vals, color=colors, width=0.66)
+    for rect, v in zip(b, vals):
+        ax.text(rect.get_x() + rect.get_width() / 2, rect.get_height() + max(vals) * 0.01, fmt.format(v), ha="center", va="bottom", fontsize=8.5, color=INK)
+    ax.set_xticks(list(x), labels, fontsize=7.8)
+    ax.tick_params(axis="x", length=0)
+    ax.set_title(title)
+    ax.set_ylim(0, max(vals) * 1.22)
+axes[0].axhline(73.5, color=INK2, linestyle="--", linewidth=1.2)
+axes[0].text(3.5, 88, "dashed: teacher self-agreement ceiling, 73.5 %.\nAbove it a model is learning the teacher's quirks.", fontsize=7.5, color=INK2, ha="center", va="top")
+fig.suptitle("LocalLLaMA/typed-decisions: 400 cases x 5 typed questions, one shared state each (n = 2,000)", x=0.01, ha="left", fontsize=12, fontweight="bold", color=INK)
+fig.text(0.01, -0.05, "Blue: Open Alternative to Jev on a stock model, no training. Orange: Laya, run here with the same scorer (matches its published 0.766). "
+         "Gray: smaller stock models. Jev row quoted from TypeSafe's published number; ECE from the Luni/laya-jev-benchmark table.", fontsize=7.5, color=INK2)
+fig.tight_layout()
+fig.savefig(OUT / "typed_decisions.png", dpi=160, bbox_inches="tight")
+plt.close(fig)
+print("FIGURES_OK", sorted(p.name for p in OUT.iterdir()))
