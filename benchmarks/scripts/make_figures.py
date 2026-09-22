@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 
 import matplotlib
+import matplotlib.ticker
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
@@ -171,3 +172,65 @@ fig.tight_layout()
 fig.savefig(OUT / "typed_decisions.png", dpi=160, bbox_inches="tight")
 plt.close(fig)
 print("FIGURES_OK", sorted(p.name for p in OUT.iterdir()))
+
+# Quality vs latency scatter plots: one per benchmark, one point per model. Log x axis.
+def scatter(points, title, fname, xlabel, note, ylim, hline=None):
+    fig, ax = plt.subplots(figsize=(8.4, 4.6))
+    ax.set_xscale("log")
+    if hline:
+        ax.axhline(hline[0], color=INK2, linestyle="--", linewidth=1.1)
+        ax.text(0.01, hline[0] + 0.7, hline[1], transform=ax.get_yaxis_transform(), ha="left", fontsize=7.5, color=INK2)
+    for label, ms, acc, color, dx, dy in points:
+        ax.scatter([ms], [acc], s=70, color=color, edgecolor="white", linewidth=1.5, zorder=3)
+        ax.annotate(label, (ms, acc), xytext=(dx, dy), textcoords="offset points", fontsize=8, color=color, ha="left" if dx >= 0 else "right", va="center")
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel("Accuracy, %")
+    ax.set_ylim(*ylim)
+    xs = [pt[1] for pt in points]
+    ax.set_xlim(min(xs) / 1.6, max(xs) * 2.4)
+    ticks = [tk for tk in [5, 10, 20, 50, 100, 200, 500, 1000, 2000] if min(xs) / 1.6 <= tk <= max(xs) * 2.4]
+    ax.set_xticks(ticks, [str(tk) for tk in ticks])
+    ax.xaxis.set_minor_formatter(matplotlib.ticker.NullFormatter())
+    ax.grid(True, axis="x", color=GRID, linewidth=0.8)
+    ax.set_title(title)
+    fig.text(0.01, -0.02, note, fontsize=7.5, color=INK2, wrap=True)
+    fig.tight_layout()
+    fig.savefig(OUT / fname, dpi=160, bbox_inches="tight")
+    plt.close(fig)
+
+td_points = []
+for label, key, color, dx, dy in [("Qwen3-0.6B", "td_qwen3-0_6b_packed_3", GRAY, 8, 0), ("Qwen3-1.7B", "td_qwen3-1_7b_packed_3", GRAY, 8, 0),
+                                  ("Qwen3.5-2B", "td_qwen3_5-2b_packed_3", GRAY, 8, 0), ("Qwen3.5-4B", "td_qwen4b_packed_3", GRAY, 8, 0),
+                                  ("Qwen3.6-27B zero-shot (this library)", "td_qwen27b_packed_3", BLUE, -10, 12),
+                                  ("Laya base", "td_laya_base", ORANGE, 8, 0), ("Laya fine-tuned on this benchmark", "td_laya_ft_3", ORANGE, 8, 0)]:
+    s = pick(key)
+    if s:
+        td_points.append((label, s["ms_per_case_p50"], 100 * s["overall"]["acc"], color, dx, dy))
+td_points.append(("Jev 1.13.0 (published)", 710, 72.7, INK2, 8, -10))
+scatter(td_points, "typed-decisions: accuracy vs latency per case (5 decisions)", "typed_decisions_scatter.png",
+        "ms per case, p50, log scale", "Qwen and Laya measured here on one H200 MIG slice (Qwen3.6-27B in 8-bit with fallback kernels; Laya is a 421M encoder). "
+        "Jev: TypeSafe's published accuracy and latency on its own infrastructure.", (20, 85), hline=(73.5, "teacher self-agreement ceiling 73.5 %"))
+
+race_points = []
+race27 = race["C4"]
+race_points.append(("Qwen3.6-27B 8-bit (this library)", 1000 / race27["questions_per_second"], 100 * race27["accuracy"], BLUE, -8, 8))
+for label, prefix, color in [("Qwen3-0.6B", "race_qwen3-0_6b_", GRAY), ("Qwen3-1.7B", "race_qwen3-1_7b_", GRAY),
+                             ("Qwen3.5-2B", "race_qwen3_5-2b_", GRAY), ("Qwen3.5-4B", "race_qwen3_5-4b_", GRAY)]:
+    for d in sorted(glob.glob(str(ROOT / f"results/{prefix}*"))):
+        f = Path(d) / "summary.json"
+        if f.exists():
+            s = json.loads(f.read_text())["C4"]
+            race_points.append((label, 1000 / s["questions_per_second"], 100 * s["accuracy"], color, 8, 0))
+            break
+for label, prefix in [("Laya base", "race_laya_base_"), ("Laya fine-tuned (typed-decisions ckpt)", "race_laya_ft_")]:
+    for d in sorted(glob.glob(str(ROOT / f"results/{prefix}*"))):
+        f = Path(d) / "summary.json"
+        if f.exists():
+            s = json.loads(f.read_text())
+            race_points.append((label, s["ms_per_passage_p50"] / 4, 100 * s["accuracy"], ORANGE, 8, 0))
+            break
+if len(race_points) > 1:
+    scatter(race_points, "RACE-H: accuracy vs latency per question (packed, 4 per passage)", "race_scatter.png",
+            "ms per question, log scale", "All measured here on one H200 MIG 2g.35gb slice. Qwen: GPU forward time per question in packed mode (benchmark_v2, C4). "
+            "Laya: wall-clock per passage / 4, including tokenization; passages beyond its context are truncated by the model.", (20, 100))
+print("SCATTER_OK", len(td_points), len(race_points))

@@ -131,6 +131,8 @@ table; we verified the scorer by running Laya ourselves and reproducing its publ
 
 ![typed-decisions](benchmarks/figures/typed_decisions.png)
 
+![typed-decisions: accuracy vs latency](benchmarks/figures/typed_decisions_scatter.png)
+
 - **A stock 27B with no training matches the published Jev number** (73.7 % vs 72.7 %) and sits on the
   teacher self-agreement ceiling (73.5 %). The benchmark's own card says a score much above 0.75 means a
   model has learned the teacher's quirks rather than the task.
