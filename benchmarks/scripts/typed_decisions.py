@@ -77,7 +77,9 @@ def decision_to_answer(qdef, keys, probs):
 
 
 class So1Runner:
-    def __init__(self, model, mode, load_8bit, device, dtype, temperature=1.0, engine="hf", gpu_util=0.8):
+    def __init__(self, model, mode, load_8bit, device, dtype, temperature=1.0, engine="hf", gpu_util=0.8,
+                 permutations=1, option_order="original"):
+        self.permutations, self.option_order = permutations, option_order
         import torch
         from so1 import Decider
         if engine == "vllm":
@@ -95,8 +97,11 @@ class So1Runner:
         self.mode = mode
 
     def predict(self, state, questions):
+        from so1 import Choice
         pairs = [question_to_choice(qid, qdef) for qid, qdef in questions.items()]
-        decisions = self.decider.decide(render_state(state), [c for c, _ in pairs], mode=self.mode)
+        if self.option_order == "reversed":  # present every question's options in reverse; keys follow
+            pairs = [(Choice(c.question, list(reversed(c.options)), name=c.name), list(reversed(keys))) for c, keys in pairs]
+        decisions = self.decider.decide(render_state(state), [c for c, _ in pairs], mode=self.mode, permutations=self.permutations)
         return {qid: decision_to_answer(qdef, keys, d.probabilities)
                 for (qid, qdef), (_, keys), d in zip(questions.items(), pairs, decisions)}
 
@@ -194,6 +199,8 @@ def main():
     ap.add_argument("--load-8bit", action="store_true")
     ap.add_argument("--engine", choices=["hf", "vllm"], default="hf", help="so1 backend engine")
     ap.add_argument("--gpu-util", type=float, default=0.8, help="vLLM gpu_memory_utilization")
+    ap.add_argument("--permutations", type=int, default=1, help="so1: option orderings to average (1 = as given, 2 = + reversed)")
+    ap.add_argument("--option-order", choices=["original", "reversed"], default="original", help="so1: present options as given or reversed")
     ap.add_argument("--device", default="cuda")
     ap.add_argument("--dtype", default="bfloat16")
     ap.add_argument("--calibrate", type=int, default=0, help="so1: fit a temperature on this many train cases (0 = raw)")
@@ -210,7 +217,8 @@ def main():
 
     temperature = 1.0
     if args.backend == "so1":
-        runner = So1Runner(args.model, args.mode, args.load_8bit, args.device, args.dtype, engine=args.engine, gpu_util=args.gpu_util)
+        runner = So1Runner(args.model, args.mode, args.load_8bit, args.device, args.dtype, engine=args.engine, gpu_util=args.gpu_util,
+                           permutations=args.permutations, option_order=args.option_order)
         if args.calibrate:
             train = load_split("train", args.data_dir)
             per_wf = args.calibrate // 4
@@ -235,6 +243,7 @@ def main():
                 print(f"PROGRESS {i + 1}/{len(test)}", flush=True)
 
     summary = dict(backend=args.backend, engine=args.engine if args.backend == "so1" else None, model=args.model, mode=args.mode if args.backend == "so1" else None,
+                   permutations=args.permutations, option_order=args.option_order,
                    load_8bit=args.load_8bit, temperature=temperature, cases=len(records),
                    ms_per_case_p50=statistics.median(latencies), ms_per_case_mean=statistics.mean(latencies),
                    overall=score(records),
@@ -245,7 +254,9 @@ def main():
     (out / "summary.json").write_text(json.dumps(summary, indent=2))
     o = summary["overall"]
     print(f"RESULT acc={o['acc']:.4f} brier={o['brier']:.4f} ece={o['ece']:.4f} kl={o['kl']:.4f} mae={o['mae']:.3f} "
-          f"p50={summary['ms_per_case_p50']:.1f}ms T={temperature} | " + json.dumps({k: round(v['acc'], 3) for k, v in summary['by_workflow'].items()}), flush=True)
+          f"p50={summary['ms_per_case_p50']:.1f}ms T={temperature} perm={args.permutations} order={args.option_order} | "
+          + json.dumps({k: round(v['acc'], 3) for k, v in summary['by_workflow'].items()})
+          + " | by_type " + json.dumps({k: round(v['acc'], 3) for k, v in summary['by_type'].items()}), flush=True)
 
 
 if __name__ == "__main__":

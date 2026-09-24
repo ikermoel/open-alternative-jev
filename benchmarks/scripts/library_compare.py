@@ -45,6 +45,9 @@ def main():
     ap.add_argument("--hf-8bit", action="store_true")
     ap.add_argument("--gpu-util", type=float, default=0.85)
     ap.add_argument("--max-num-seqs", type=int, default=256)
+    ap.add_argument("--permutations", type=int, default=1, help="option orderings to average (1 = as given)")
+    ap.add_argument("--option-order", choices=["original", "reversed"], default="original")
+    ap.add_argument("--modes", default="separate,packed")
     ap.add_argument("--vllm-kwargs", default="{}", help='JSON of extra vllm.LLM kwargs, e.g. {"gdn_prefill_backend": "triton"}')
     ap.add_argument("--out", required=True)
     args = ap.parse_args()
@@ -52,6 +55,9 @@ def main():
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
     items = load_items(args.data, args.passages)
+    if args.option_order == "reversed":  # reverse every question's options and its answer index
+        items = [(s, [Choice(q.question, list(reversed(q.options)), name=q.name) for q in qs], [q.n - 1 - a for q, a in zip(qs, ans)])
+                 for s, qs, ans in items]
     n_questions = sum(len(qs) for _, qs, _ in items)
     print(f"ITEMS {len(items)} passages, {n_questions} questions", flush=True)
 
@@ -71,15 +77,16 @@ def main():
         pb = PromptBuilder(decider.backend.tokenizer)
         tokens = {"packed": sum(len(pb.packed(s, qs)) for s, qs, _ in items),
                   "separate": sum(len(p) for s, qs, _ in items for p in pb.separate(s, qs))}
-        for mode in ["separate", "packed"]:
+        for mode in args.modes.split(","):
             run(decider, items[:2], mode, args.chunk)  # warm up kernels / prefix cache
+            decider.permutations = args.permutations
             decisions, elapsed = run(decider, items, mode, args.chunk)
             flat = [d for group in decisions for d in group]
             answers = [a for _, _, ans in items for a in ans]
             probs = [d.probabilities for d in flat]
             preds = [d.index for d in flat]
             key = f"{backend}/{mode}"
-            r = dict(backend=backend, mode=mode, questions=len(flat),
+            r = dict(backend=backend, mode=mode, permutations=args.permutations, option_order=args.option_order, questions=len(flat),
                      accuracy=statistics.mean(p == a for p, a in zip(preds, answers)),
                      ece=expected_calibration_error(probs, answers),
                      mean_confidence=statistics.mean(max(p) for p in probs),

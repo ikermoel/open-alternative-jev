@@ -60,3 +60,12 @@ def test_apply_to_decision():
     d = Decision(Choice("q", ["a", "b"]), [0.9, 0.1])
     out = TemperatureScaler(2.0).apply(d)
     assert out.choice == "a" and out.confidence < 0.9 and math.isclose(sum(out.probabilities), 1.0)
+
+
+def test_option_orders():
+    from so1.decider import option_orders
+    assert option_orders(4, 1) == [[0, 1, 2, 3]]
+    assert option_orders(2, 2) == [[0, 1], [1, 0]]
+    assert option_orders(2, 5) == [[0, 1], [1, 0]]          # only two distinct orders exist
+    assert option_orders(4, 3) == [[0, 1, 2, 3], [3, 2, 1, 0], [1, 2, 3, 0]]
+    assert option_orders(3, 4) == [[0, 1, 2], [2, 1, 0], [1, 2, 0], [2, 0, 1]]
