@@ -234,3 +234,36 @@ if len(race_points) > 1:
             "ms per question, log scale", "All measured here on one H200 MIG 2g.35gb slice. Qwen: GPU forward time per question in packed mode (benchmark_v2, C4). "
             "Laya: wall-clock per passage / 4, including tokenization; passages beyond its context are truncated by the model.", (20, 100))
 print("SCATTER_OK", len(td_points), len(race_points))
+
+# Option order: as given / reversed / averaged (permutations=2), per model and benchmark.
+def oo(prefix):
+    for d in sorted(glob.glob(str(ROOT / f"results/{prefix}*"))):
+        f = Path(d) / "summary.json"
+        if f.exists():
+            s = json.loads(f.read_text())
+            return 100 * (s["overall"]["acc"] if "overall" in s else s["results"]["hf/packed"]["accuracy"])
+    return None
+groups = [("typed-decisions\nQwen3.5-4B", "oo_td_qwen4b_"), ("typed-decisions\nQwen3.6-27B", "oo_td_qwen27b_"),
+          ("RACE-H\nQwen3.5-4B", "oo_race_qwen4b_"), ("RACE-H\nQwen3.6-27B", "oo_race_qwen27b_")]
+cfgs = [("as given", "original_p1", GRAY), ("reversed", "reversed_p1", ORANGE), ("both orders averaged (permutations=2)", "original_p2", BLUE)]
+vals = [[oo(f"{g}{c}") for _, c, _ in cfgs] for _, g in groups]
+if all(v is not None for row in vals for v in row):
+    fig, ax = plt.subplots(figsize=(9, 3.8))
+    w = 0.26
+    for ci, (label, _, color) in enumerate(cfgs):
+        xs = [i + (ci - 1) * w for i in range(len(groups))]
+        ys = [vals[i][ci] for i in range(len(groups))]
+        b = ax.bar(xs, ys, width=w - 0.03, color=color, label=label)
+        for rect, v in zip(b, ys):
+            ax.text(rect.get_x() + rect.get_width() / 2, rect.get_height() + 0.6, f"{v:.1f}", ha="center", va="bottom", fontsize=8, color=INK)
+    ax.set_xticks(range(len(groups)), [g for g, _ in groups], fontsize=8.5)
+    ax.tick_params(axis="x", length=0)
+    ax.set_ylim(40, 100)
+    ax.set_ylabel("Accuracy, %")
+    ax.set_title("Option order: the same questions with options as given, reversed, or averaged over both")
+    ax.legend(frameon=False, fontsize=8.5, loc="upper left")
+    fig.text(0.01, -0.03, "Packed mode. typed-decisions: 400 cases x 5 questions. RACE-H: 100 passages x 4 questions. Averaging costs a second forward pass (1.7x latency).", fontsize=7.5, color=INK2)
+    fig.tight_layout()
+    fig.savefig(OUT / "option_order.png", dpi=160, bbox_inches="tight")
+    plt.close(fig)
+    print("OPTION_ORDER_OK")

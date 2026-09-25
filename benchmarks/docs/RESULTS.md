@@ -295,6 +295,46 @@ short states, and reading comprehension over a 400-token passage is a different 
 questions per second, wall-clock) and reasonably calibrated here (ECE 0.046). None of this is a criticism of
 Laya on its own tasks; it is the reason a "which model" question needs a "for what" attached.
 
+## 10. Option order: the bias we had not measured, and the fix
+
+An external leaderboard that ran this library reported that reversing the two options of yes/no questions
+("A. no, B. yes" instead of "A. yes, B. no") dropped its accuracy from 72 % to 21 %. We had measured
+sensitivity to the order of *questions* (section 5) but never to the order of *options*, which is a
+different and older problem: a model that answers with a letter can prefer the letter.
+
+So we measured it, and shipped the standard fix as an option. `permutations=2` presents every question
+twice, once as given and once reversed, and averages the two probability vectors, mapped back to the
+caller's order; `permutations=k` adds cyclic shifts. Three configurations, two models, two benchmarks,
+packed mode (`results/oo_*`):
+
+| Benchmark, model | As given | Reversed | Averaged (`permutations=2`) | Latency, averaged |
+|---|---:|---:|---:|---:|
+| typed-decisions, Qwen3.5-4B, accuracy | 59.3 % | 55.2 % | 59.5 % | 177 ms/case (1.7x) |
+| typed-decisions, Qwen3.5-4B, yes/no only | 76.7 % | 63.2 % | 70.7 % | |
+| typed-decisions, Qwen3.5-4B, ECE / KL / Brier | 0.118 / 0.38 / 0.164 | 0.131 / 0.44 / 0.225 | 0.062 / 0.29 / 0.152 | |
+| typed-decisions, Qwen3.6-27B, accuracy | 73.7 % | 75.3 % | 75.5 % | 969 ms/case (1.7x) |
+| typed-decisions, Qwen3.6-27B, yes/no only | 82.7 % | 83.0 % | 84.3 % | |
+| typed-decisions, Qwen3.6-27B, ECE / KL / Brier | 0.020 / 0.27 / 0.113 | 0.029 / 0.29 / 0.120 | 0.0075 / 0.23 / 0.098 | |
+| RACE-H (100 passages), Qwen3.5-4B, accuracy / ECE | 84.5 % / 0.037 | 84.5 % / 0.042 | 85.5 % / 0.029 | 39 ms/question (1.9x) |
+| RACE-H (100 passages), Qwen3.6-27B, accuracy / ECE | 94.0 % / 0.021 | 92.8 % / 0.014 | 93.5 % / 0.012 | 215 ms/question (1.9x) |
+
+What it says:
+
+- The bias exists and scales inversely with model size, like interference did. Reversing the options costs
+  the 4B four points overall and 13.5 points on yes/no questions, where the first position ("yes") is
+  favoured. The 27B moves 1.7 points, and in the other direction: on these prompts it slightly prefers the
+  second position for choice questions (67.8 % as given, 73.8 % reversed). Neither is the 51-point collapse
+  the leaderboard reported; whatever prompt they ran produced a much larger effect than ours does.
+- Averaging is the right default for anyone who consumes the probabilities. On typed-decisions it improves
+  every metric for both models, and for the 27B it gives the best distribution numbers of any zero-shot
+  configuration we have: 75.5 % accuracy, ECE 0.0075, KL 0.23, Brier 0.098, all with no training. On RACE-H,
+  four options and a long passage, the two orders already agree and averaging changes nothing beyond noise.
+- The price is two forward passes per item: 1.7x latency in packed mode (the second pass shares nothing
+  with the first in Transformers; on vLLM the prefix cache would absorb the shared state).
+
+We left it off by default. The library's baseline numbers stay reproducible as published, and the option
+is one argument away for anyone who wants position-invariant probabilities and can pay for them.
+
 ## What this does and does not establish
 
 - Reading several typed answers from one forward pass keeps aggregate accuracy on a 27B model up to 12
@@ -305,6 +345,8 @@ Laya on its own tasks; it is the reason a "which model" question needs a "for wh
 - Individual answers depend on their neighbours in 6 to 9 % of cases, three times the numerical noise
   floor, without moving accuracy.
 - Raw probabilities are over-confident by about 5 points and one cross-validated scalar fixes most of it.
+- Option order matters, more for small models; asking in both orders and averaging (`permutations=2`)
+  removes it at twice the compute and, on typed-decisions, improves every metric.
 - On the community benchmark for this task, a stock 27B zero-shot matches Jev's measured accuracy with
   probabilities far closer to the gold distribution; a small model fine-tuned on the benchmark scores higher but past the point where
   the benchmark's authors say the score means anything.

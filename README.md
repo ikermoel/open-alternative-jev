@@ -99,6 +99,38 @@ The changes are symmetric, so aggregate accuracy does not drop, but a given deci
 on which questions accompany it, and on their order (rotating the order changes 8 % of MMLU answers,
 2.4 % of RACE-H answers). If you need answer-level stability, use `mode="separate"`.
 
+### Option order: position bias, and `permutations=2`
+
+A model that reads answers from letter tokens can prefer a position over a content. We measured it by
+presenting every question with its options in the given order, in reversed order, and with both orders
+averaged (`permutations=2`, `benchmarks/results/oo_*`). Same questions, same models, packed mode.
+
+| | Options as given | Options reversed | **Both orders averaged** (`permutations=2`) |
+|---|---:|---:|---:|
+| typed-decisions, Qwen3.5-4B: accuracy / ECE / KL | 59.3 % / 0.118 / 0.38 | 55.2 % / 0.131 / 0.44 | **59.5 % / 0.062 / 0.29** |
+| typed-decisions, Qwen3.5-4B, yes/no questions only | 76.7 % | 63.2 % | 70.7 % |
+| typed-decisions, Qwen3.6-27B: accuracy / ECE / KL | 73.7 % / 0.020 / 0.27 | 75.3 % / 0.029 / 0.29 | **75.5 % / 0.0075 / 0.23** |
+| RACE-H (100 passages), Qwen3.5-4B: accuracy / ECE | 84.5 % / 0.037 | 84.5 % / 0.042 | 85.5 % / 0.029 |
+| RACE-H (100 passages), Qwen3.6-27B: accuracy / ECE | 94.0 % / 0.021 | 92.8 % / 0.014 | 93.5 % / 0.012 |
+| Latency per typed-decisions case, 27B | 576 ms | 575 ms | 969 ms |
+
+![Option order](benchmarks/figures/option_order.png)
+
+- **Position bias is real and larger on the smaller model.** Reversing the options moves the 4B's yes/no
+  accuracy by 13.5 points and its overall typed-decisions score by 4 points; the 27B moves by 1.7 points
+  (in the other direction: it happened to prefer the second position there). On RACE-H, four options and
+  long passages, the effect is within noise for both.
+- **Averaging two orders is a consistent win on typed-decisions.** For the 27B it adds 1.9 points of
+  accuracy and cuts ECE from 0.020 to 0.0075 and KL from 0.27 to 0.23, the best distribution numbers of
+  any zero-shot row on that benchmark. For the 4B it halves ECE. On RACE-H it is neutral. Cost: two
+  forward passes per item, 1.7x the latency in packed mode.
+- **It is off by default.** `Decider(..., permutations=2)` or `decide(..., permutations=2)` turns it on;
+  probabilities always come back in the order you listed the options. `permutations=k > 2` adds cyclic
+  shifts. The exact reversal ordering is deterministic, so results are reproducible.
+- We could not reproduce the 72 % to 21 % collapse on yes/no questions that an external leaderboard
+  reported for this library; on our prompts the reversal costs 13.5 points on the 4B and nothing on the 27B.
+  Different prompts or a different model may behave differently, which is exactly why the option exists.
+
 ### Calibration: one scalar, fitted on held-out labels
 
 Raw confidence is about 5 points too high (mean confidence 0.90, accuracy 0.84 on MMLU). Temperature
@@ -193,6 +225,9 @@ measurement the benchmark's authors took through TypeSafe's API (`jev-latest`, r
 - **FP8 changes nothing at this size.** Qwen3-0.6B in FP8 and in BF16 through the same vLLM engine land within
   a point of each other (30.7 % vs 29.1 % packed, 38.5 % vs 38.8 % separate). The bottleneck is the model, not
   the precision.
+- With `permutations=2` (options asked in both orders, averaged) the 27B reaches **75.5 % at ECE 0.0075 and
+  KL 0.23** on this benchmark, at 1.7x the latency; see the option-order section below. The table keeps the
+  default configuration.
 - Temperature scaling fitted on 200 train cases to the teacher's soft distributions improves Brier and KL
   (27B: 0.113 to 0.074) but raises hard-label ECE (0.020 to 0.135), so the calibrated rows are in
   `benchmarks/results/td_*_cal_*` rather than in this table.
@@ -262,6 +297,9 @@ Two modes:
 - `mode="separate"`: one sequence per question, each with the full state. No interference between
   questions. On vLLM this uses constrained generation with `allowed_token_ids` and shares the state
   through the prefix cache, which is the conventional baseline.
+
+And one knob: `permutations=2` asks each question twice, with the options in both orders, and averages the
+probabilities (position-bias cancellation, measured above). Default 1.
 
 ## Backends
 

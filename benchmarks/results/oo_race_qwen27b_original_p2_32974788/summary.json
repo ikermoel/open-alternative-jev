@@ -1,0 +1,20 @@
+{
+  "model": "/projects/ikmo5391/hf/hub/models--Qwen--Qwen3.6-27B/snapshots/6a9e13bd6fc8f0983b9b99948120bc37f49c13e9",
+  "passages": 100,
+  "results": {
+    "hf/packed": {
+      "backend": "hf",
+      "mode": "packed",
+      "permutations": 2,
+      "option_order": "original",
+      "questions": 400,
+      "accuracy": 0.935,
+      "ece": 0.012005352593693576,
+      "mean_confidence": 0.9292353217454766,
+      "seconds": 85.94463955494575,
+      "questions_per_second": 4.654158794211636,
+      "tokens": 71216,
+      "missing_labels": 0
+    }
+  }
+}
